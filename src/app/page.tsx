@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { generateDeck, shuffleDeck, Card as CardType } from '@/lib/deck';
+import {
+  DndContext,
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+
 import Card from '@/components/Card'
+import SortableCard from '@/components/SortableCard'
+
 
 export default function Home() {
   const [deck, setDeck] = useState<CardType[]>([]);
@@ -33,6 +51,17 @@ export default function Home() {
     }
   };
 
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = player1.findIndex((c) => c.rank + c.suit === active.id);
+      const newIndex = player1.findIndex((c) => c.rank + c.suit === over?.id);
+      setPlayer1((items) => arrayMove(items, oldIndex, newIndex));
+    }
+  }
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-white">
       {/* Bot (Player 2) */}
@@ -58,9 +87,18 @@ export default function Home() {
       {/* Player (Player 1) */}
       <div className="text-center">
         <h2 className="font-bold mb-2">Player 1 (You)</h2>
-        <div className="flex gap-1 flex-wrap justify-center h-24">
-          {player1.map((c, i) => <Card key={i} card={c} />)}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={player1.map((c) => c.rank + c.suit)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="flex gap-1 flex-wrap justify-center">
+            {player1.map((c) => (
+              <SortableCard key={c.rank + c.suit} id={c.rank + c.suit} card={c} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
       </div>
 
     </main>
