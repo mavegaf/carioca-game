@@ -56,8 +56,8 @@ export default function Home() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = player1.findIndex((c) => c.rank + c.suit === active.id);
-      const newIndex = player1.findIndex((c) => c.rank + c.suit === over?.id);
+      const oldIndex = player1.findIndex((c) => `${c.rank}${c.suit}-${c.deckNumber}` === active.id);
+      const newIndex = player1.findIndex((c) => `${c.rank}${c.suit}-${c.deckNumber}` === over?.id);
       setPlayer1((items) => arrayMove(items, oldIndex, newIndex));
     }
   }
@@ -89,12 +89,12 @@ export default function Home() {
         <h2 className="font-bold mb-2">Player 1 (You)</h2>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
-          items={player1.map((c) => c.rank + c.suit)}
+          items={player1.map((c) => `${c.rank}${c.suit}-${c.deckNumber}`)}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex gap-1 flex-wrap justify-center">
             {player1.map((c) => (
-              <SortableCard key={c.rank + c.suit} id={c.rank + c.suit} card={c} />
+              <SortableCard key={`${c.rank}${c.suit}-${c.deckNumber}`} id={`${c.rank}${c.suit}-${c.deckNumber}`} card={c} />
             ))}
           </div>
         </SortableContext>
