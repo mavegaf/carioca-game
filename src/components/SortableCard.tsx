@@ -7,7 +7,7 @@
   import { Card as CardType } from '@/lib/deck';
 
 
-export default function SortableCard({ card, id }: { card: CardType; id: string }) {
+export default function SortableCard({ card, id, onDoubleClick }: { card: CardType; id: string, onDoubleClick: () => void }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   
     const style = {
@@ -16,7 +16,7 @@ export default function SortableCard({ card, id }: { card: CardType; id: string 
     };
   
     return (
-      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners} onDoubleClick={onDoubleClick} className="cursor-pointer">
         <Card card={card} />
       </div>
     );
