@@ -1,13 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { generateDeck, Card as CardType } from '@/lib/deck';
+import { useEffect, useState } from 'react';
+import { generateDeck, shuffleDeck, Card as CardType } from '@/lib/deck';
 import Card from '@/components/Card'
 
 export default function Home() {
-  const [deck, setDeck] = useState<CardType[]>(generateDeck());
+  const [deck, setDeck] = useState<CardType[]>([]);
   const [player1, setPlayer1] = useState<CardType[]>([]);
   const [player2, setPlayer2] = useState<CardType[]>([]);
+
+  useEffect(() => {
+    const newDeck = shuffleDeck(generateDeck());
+    const p1 = newDeck.slice(0, 12);
+    const p2 = newDeck.slice(12, 24);
+    const remaining = newDeck.slice(24);
+
+    setPlayer1(p1);
+    setPlayer2(p2);
+    setDeck(remaining);
+  }, []);
 
   const drawCard = (player: 'p1' | 'p2') => {
     if (deck.length == 0) return;
