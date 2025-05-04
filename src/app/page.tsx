@@ -26,6 +26,7 @@ export default function Home() {
   const [discardPile, setDiscardPile] = useState<CardType[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<'p1' | 'p2'>('p1');
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
 
   useEffect(() => {
     const newDeck = shuffleDeck(generateDeck());
@@ -55,10 +56,14 @@ export default function Home() {
   }
 
   function drawFromDeck() {
-    if (deck.length === 0 || hasDrawn) return;
+    if (currentPlayer !== 'p1' || deck.length === 0 || hasDrawn) return;
     const [card, ...rest] = deck;
     if (currentPlayer === 'p1') {
       setPlayer1([...player1, card]);
+      setLastDrawnCardId(`${card.rank}${card.suit}-${card.deckNumber}`);
+      setTimeout(() => {
+        setLastDrawnCardId(null);
+      }, 2000);
     } else {
       setPlayer2([...player2, card]);
     }
@@ -67,11 +72,15 @@ export default function Home() {
   }
 
   function drawFromDiscard() {
-    if (discardPile.length === 0 || hasDrawn) return;
+    if (currentPlayer !== 'p1' || discardPile.length === 0 || hasDrawn) return;
     const card = discardPile[discardPile.length - 1];
     const rest = discardPile.slice(0, -1);
     if (currentPlayer === 'p1') {
       setPlayer1([...player1, card]);
+      setLastDrawnCardId(`${card.rank}${card.suit}-${card.deckNumber}`);
+      setTimeout(() => {
+        setLastDrawnCardId(null);
+      }, 2000);
     } else {
       setPlayer2([...player2, card]);
     }
@@ -136,6 +145,7 @@ export default function Home() {
                   id={`${c.rank}${c.suit}-${c.deckNumber}`}
                   card={c}
                   onDoubleClick={() => discardCard(`${c.rank}${c.suit}-${c.deckNumber}`)}
+                  highlight={lastDrawnCardId === `${c.rank}${c.suit}-${c.deckNumber}`}
                 />
               ))}
             </div>
