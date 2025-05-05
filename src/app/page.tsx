@@ -28,6 +28,9 @@ export default function Home() {
   const [hasDrawn, setHasDrawn] = useState(false);
   const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
   const [currentObjective, setCurrentObjective] = useState('2 trios');
+  const [player1Sets, setPlayer1Sets] = useState<CardType[][]>([]);
+  const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
+  const [hasPlayer2GoneDown, setHasPlayer2GoneDown] = useState(false);
 
   useEffect(() => {
     const newDeck = shuffleDeck(generateDeck());
@@ -122,11 +125,18 @@ export default function Home() {
       });
   
       const data = await res.json();
-      const { drawFrom, discardCard } = data.decision;
+
+      if (!data || !data.decision) {
+        console.error('Bot move response missing decision:', data);
+        // TODO, repeat?
+        return;
+      }
+
+      const { drawFrom, discardCard, canGoDown, groups } = data.decision;
   
       console.log('Bot decision:', data.decision);
   
-      // Take card
+      // Tomar carta
       if (drawFrom === 'deck') {
         const [card, ...rest] = deck;
         setPlayer2((prev) => [...prev, card]);
@@ -138,7 +148,7 @@ export default function Home() {
         setDiscardPile(rest);
       }
   
-      // Discard card
+      // Descartar carta
       const [rankSuit, deckNumber] = discardCard.split('-');
       const cardToDiscard = player2.find(
         (c) =>
@@ -159,6 +169,31 @@ export default function Home() {
         setDiscardPile((prev) => [...prev, cardToDiscard]);
       }
   
+      // Si puede bajarse, mover los grupos
+      if (canGoDown) {
+        const newGroups = groups.map((group: string[]) =>
+          group
+            .map((id) =>
+              player2.find(
+                (c) => `${c.rank}${c.suit}-${c.deckNumber}` === id
+              )
+            )
+            .filter(Boolean)
+        );
+  
+        setPlayer2Sets((prev) => [...prev, ...newGroups]);
+  
+        const remaining = player2.filter(
+          (c) =>
+            !groups
+              .flat()
+              .includes(`${c.rank}${c.suit}-${c.deckNumber}`)
+        );
+        setPlayer2(remaining);
+        setHasPlayer2GoneDown(true);
+      }
+  
+      // Turno vuelve a Player 1
       setCurrentPlayer('p1');
       setHasDrawn(false);
     } catch (error) {
@@ -175,6 +210,20 @@ export default function Home() {
           {player2.map((c, i) => <Card key={i} card={c} />)}
         </div>
       </div>
+      <div className="mt-4">
+      <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
+      {player2Sets.length === 0 ? (
+        <p>No sets yet.</p>
+      ) : (
+        player2Sets.map((set, i) => (
+          <div key={i} className="flex gap-1 mb-2">
+            {set.map((card, j) => (
+              <Card key={j} card={card} small />
+            ))}
+          </div>
+        ))
+      )}
+    </div>
 
       <div className="flex gap-2 mb-2">
         <div
@@ -197,6 +246,20 @@ export default function Home() {
       </div>
 
       {/* Player (Player 1) */}
+      <div className="mt-4">
+        <h3 className="font-bold mb-1">Player 1 Sets (You)</h3>
+        {player1Sets.length === 0 ? (
+          <p>No sets yet.</p>
+        ) : (
+          player1Sets.map((set, i) => (
+            <div key={i} className="flex gap-1 mb-2">
+              {set.map((card, j) => (
+                <Card key={j} card={card} />
+              ))}
+            </div>
+          ))
+        )}
+      </div>
       <div className="text-center">
         <h2 className="font-bold mb-2">Player 1 (You)</h2>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
