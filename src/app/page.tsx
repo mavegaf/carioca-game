@@ -216,9 +216,9 @@ export default function Home() {
         <p>No sets yet.</p>
       ) : (
         player2Sets.map((set, i) => (
-          <div key={i} className="flex gap-1 mb-2">
+          <div key={i} className="flex gap-1 mb-1 scale-75">
             {set.map((card, j) => (
-              <Card key={j} card={card} small />
+              <Card key={j} card={card} />
             ))}
           </div>
         ))
