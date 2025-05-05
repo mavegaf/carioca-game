@@ -30,7 +30,7 @@ export default function Home() {
   const [currentObjective, setCurrentObjective] = useState('2 trios');
   const [player1Sets, setPlayer1Sets] = useState<CardType[][]>([]);
   const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
-  const [gameLog, setGameLog] = useState<string[]>([]);
+  const [gameLog, setGameLog] = useState<string>('');
   const [hasPlayer1GoneDown, setHasPlayer1GoneDown] = useState(false);
   const [hasPlayer2GoneDown, setHasPlayer2GoneDown] = useState(false);
 
@@ -46,13 +46,17 @@ export default function Home() {
     setDiscardPile([firstDiscard]);
     setDeck(remaining);
     setCurrentPlayer('p1');
+    setGameLog('Player 1. Take a card');
   }, []);
 
   useEffect(() => {
     if (currentPlayer === 'p2') {
+      setGameLog('Player 2. Thinking...');
       setTimeout(() => {
         botMove();
       }, 1000);
+    } else {
+      setGameLog('Player 1. Take a card');
     }
   }, [currentPlayer]);
 
@@ -74,10 +78,12 @@ export default function Home() {
     const [card, ...rest] = deck;
     if (currentPlayer === 'p1') {
       setPlayer1([...player1, card]);
+      // To highlight the last card
       setLastDrawnCardId(`${card.rank}${card.suit}-${card.deckNumber}`);
       setTimeout(() => {
         setLastDrawnCardId(null);
       }, 2000);
+      setGameLog('Player 1: Discard a card');
     } else {
       setPlayer2([...player2, card]);
     }
@@ -116,6 +122,7 @@ export default function Home() {
 
   async function botMove() {
     try {
+      setGameLog('Player 2: Calculating best move...');
       const res = await fetch('/api/bot-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,12 +133,19 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
+      setGameLog('Player 2: Calculating best move...');
+      let data = await res.json();
+      setGameLog('Player 2: Playing');
 
       if (!data || !data.decision) {
         console.error('Bot move response missing decision:', data);
-        // TODO, repeat?
-        return;
+        // lets do anything so don't block the game
+        data = {
+          "canGoDown": false,
+          "groups": [],
+          "drawFrom": "deck",
+          "discardCard": `${player2[0].rank}${player2[0].suit}${player2[0].deckNumber}`
+        }
       }
 
       const { drawFrom, discardCard, canGoDown, groups } = data.decision;
@@ -226,90 +240,117 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-white">
-      {/* Bot (Player 2) */}
-      <div className="mb-4 text-center">
-        <h2 className="font-bold mb-2">Bot (Player 2)</h2>
-        <div className="flex gap-1 flex-wrap justify-center h-24">
-          {player2.map((c, i) => <Card key={i} card={c} />)}
+    <main className="flex w-full max-w-6xl mx-auto">
+      <div className="w-1/4 p-4 bg-gray-50 rounded">
+        <h3 className="font-bold mb-2"><a href="https://es.wikipedia.org/wiki/Carioca_(juego)">Carioca</a></h3>
+        <ul className="text-sm list-disc list-inside mb-4">
+          <li>Built with Next.js.</li>
+          <li>Uses the OpenAI API for bot logic.</li>
+          <li>Hosted on Vercel.</li>
+        </ul>
+        <h3 className="font-bold mb-2">In Development</h3>
+        <ul className="text-sm list-disc list-inside mb-4">
+          <li>Only supports "trios" fow now</li>
+          <li>You can lay down once, but no other cards can be played after.</li>
+          <li>No win condition implemented yet.</li>
+        </ul>
+        <h3 className="font-bold mb-2">Instructions</h3>
+        <ul className="text-sm list-disc list-inside mb-4">
+          <li>Draw one card (from the deck or discard pile).</li>
+          <li>Rearrange your hand (optional).</li>
+          <li>Discard one card to end your turn (double click).</li>
+          <li>Lay down when you meet the objective.</li>
+        </ul>
+        <h3 className="font-bold mb-2">Game status</h3>
+        <div className="text-sm max-h-96 overflow-y-auto bg-white p-2 rounded border">
+            <div>{gameLog}</div>
         </div>
       </div>
-      <div className="mt-4">
-      <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
-      {player2Sets.length === 0 ? (
-        <p>No sets yet.</p>
-      ) : (
-        player2Sets.map((set, i) => (
-          <div key={i} className="flex gap-1 mb-1 scale-75">
-            {set.map((card, j) => (
-              <Card key={j} card={card} />
-            ))}
+      <div className="w-3/4 p-4 justify-center text-center">
+        {/* Bot (Player 2) */}
+        <div className="mb-4 text-center">
+          <h2 className="font-bold mb-2">Bot (Player 2)</h2>
+          <div className="flex gap-1 flex-wrap justify-center h-24">
+            {player2.map((c, i) => <Card key={i} card={c} />)}
           </div>
-        ))
-      )}
-    </div>
-
-      <div className="flex gap-2 mb-2">
-        <div
-          className="w-16 h-24 bg-gray-300 rounded-lg flex items-center justify-center cursor-pointer"
-          onClick={drawFromDeck}
-        >
-          Deck ({deck.length})
         </div>
-
-        <div
-          className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer"
-          onClick={drawFromDiscard}
-        >
-          {discardPile.length > 0 ? (
-            <Card card={discardPile[discardPile.length - 1]} />
+        <div className="mt-4">
+        <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
+          {player2Sets.length === 0 ? (
+            <p>No sets yet.</p>
           ) : (
-            'Empty'
+            player2Sets.map((set, i) => (
+              <div key={i} className="flex gap-1 mb-1 scale-75">
+                {set.map((card, j) => (
+                  <Card key={j} card={card} />
+                ))}
+              </div>
+            ))
           )}
         </div>
-      </div>
 
-      {/* Player (Player 1) */}
-      <div className="mt-4">
-        <h3 className="font-bold mb-1">Player 1 Sets (You)</h3>
-        {player1Sets.length === 0 ? (
-          <p>No sets yet.</p>
-        ) : (
-          player1Sets.map((set, i) => (
-            <div key={i} className="flex gap-1 mb-1 scale-75">
-              {set.map((card, j) => (
-                <Card key={j} card={card} />
-              ))}
-            </div>
-          ))
-        )}
-      </div>
-      <div className="text-center">
-        <h2 className="font-bold mb-2">Player 1 (You)</h2>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={player1.map((c) => `${c.rank}${c.suit}-${c.deckNumber}`)}
-            strategy={verticalListSortingStrategy}
+        <div className="flex gap-2 mb-2 justify-center">
+          <div
+            className="w-16 h-24 bg-gray-300 rounded-lg flex items-center justify-center cursor-pointer"
+            onClick={drawFromDeck}
           >
-            <div className="flex gap-1 flex-wrap justify-center">
-              {player1.map((c) => (
-                <SortableCard
-                  key={`${c.rank}${c.suit}-${c.deckNumber}`}
-                  id={`${c.rank}${c.suit}-${c.deckNumber}`}
-                  card={c}
-                  onDoubleClick={() => discardCard(`${c.rank}${c.suit}-${c.deckNumber}`)}
-                  highlight={lastDrawnCardId === `${c.rank}${c.suit}-${c.deckNumber}`}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-        <button
-          className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
-          onClick={handlePlayer1GoDown}
-        >
-          Bajarse
-        </button>
+            Deck ({deck.length})
+          </div>
+
+          <div
+            className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer"
+            onClick={drawFromDiscard}
+          >
+            {discardPile.length > 0 ? (
+              <Card card={discardPile[discardPile.length - 1]} />
+            ) : (
+              'Empty'
+            )}
+          </div>
+        </div>
+
+        {/* Player (Player 1) */}
+        <div className="mt-4">
+          <h3 className="font-bold mb-1">Player 1 Sets (You)</h3>
+          {player1Sets.length === 0 ? (
+            <p>No sets yet.</p>
+          ) : (
+            player1Sets.map((set, i) => (
+              <div key={i} className="flex gap-1 mb-1 scale-75">
+                {set.map((card, j) => (
+                  <Card key={j} card={card} />
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+        <div className="text-center">
+          <h2 className="font-bold mb-2">Player 1 (You)</h2>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={player1.map((c) => `${c.rank}${c.suit}-${c.deckNumber}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex gap-1 flex-wrap justify-center">
+                {player1.map((c) => (
+                  <SortableCard
+                    key={`${c.rank}${c.suit}-${c.deckNumber}`}
+                    id={`${c.rank}${c.suit}-${c.deckNumber}`}
+                    card={c}
+                    onDoubleClick={() => discardCard(`${c.rank}${c.suit}-${c.deckNumber}`)}
+                    highlight={lastDrawnCardId === `${c.rank}${c.suit}-${c.deckNumber}`}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <button
+            className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
+            onClick={handlePlayer1GoDown}
+          >
+            Lay Down
+          </button>
+        </div>
       </div>
     </main>
   );

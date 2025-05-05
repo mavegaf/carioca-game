@@ -4,7 +4,7 @@ export default function Card( { card }: { card: CardType }) {
     const isRed = card.suit === '♥' || card.suit === '♦';
 
     return (
-        <div className={`w-16 h-24 border rounded-lg flex items-center justify-center text-2xl ${isRed ? 'text-red-500' : 'text-black'} bg-white shadow`}>    
+        <div className={`w-12 h-18 border rounded-lg flex items-center justify-center text-xl ${isRed ? 'text-red-500' : 'text-black'} bg-white shadow`}>    
             {card.rank} {card.suit}
         </div>
     );
