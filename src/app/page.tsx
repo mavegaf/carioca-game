@@ -27,6 +27,7 @@ export default function Home() {
   const [currentPlayer, setCurrentPlayer] = useState<'p1' | 'p2'>('p1');
   const [hasDrawn, setHasDrawn] = useState(false);
   const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
+  const [currentObjective, setCurrentObjective] = useState('2 trios');
 
   useEffect(() => {
     const newDeck = shuffleDeck(generateDeck());
@@ -41,6 +42,14 @@ export default function Home() {
     setDeck(remaining);
     setCurrentPlayer('p1');
   }, []);
+
+  useEffect(() => {
+    if (currentPlayer === 'p2') {
+      setTimeout(() => {
+        botMove();
+      }, 1000); 
+    }
+  }, [currentPlayer]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -98,6 +107,63 @@ export default function Home() {
     setDiscardPile([...discardPile, card]);
     setCurrentPlayer('p2');
     setHasDrawn(false);
+  }
+
+  async function botMove() {
+    try {
+      const res = await fetch('/api/bot-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          botHand: player2,
+          discardTop: discardPile[discardPile.length - 1],
+          objective: currentObjective,
+        }),
+      });
+  
+      const data = await res.json();
+      const { drawFrom, discardCard } = data.decision;
+  
+      console.log('Bot decision:', data.decision);
+  
+      // Take card
+      if (drawFrom === 'deck') {
+        const [card, ...rest] = deck;
+        setPlayer2((prev) => [...prev, card]);
+        setDeck(rest);
+      } else if (drawFrom === 'discard') {
+        const card = discardPile[discardPile.length - 1];
+        const rest = discardPile.slice(0, -1);
+        setPlayer2((prev) => [...prev, card]);
+        setDiscardPile(rest);
+      }
+  
+      // Discard card
+      const [rankSuit, deckNumber] = discardCard.split('-');
+      const cardToDiscard = player2.find(
+        (c) =>
+          `${c.rank}${c.suit}` === rankSuit &&
+          `${c.deckNumber}` === deckNumber
+      );
+      if (cardToDiscard) {
+        setPlayer2((prev) =>
+          prev.filter(
+            (c) =>
+              !(
+                c.rank === cardToDiscard.rank &&
+                c.suit === cardToDiscard.suit &&
+                c.deckNumber === cardToDiscard.deckNumber
+              )
+          )
+        );
+        setDiscardPile((prev) => [...prev, cardToDiscard]);
+      }
+  
+      setCurrentPlayer('p1');
+      setHasDrawn(false);
+    } catch (error) {
+      console.error('Error in botMove:', error);
+    }
   }
 
   return (
