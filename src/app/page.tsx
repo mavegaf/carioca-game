@@ -30,6 +30,8 @@ export default function Home() {
   const [currentObjective, setCurrentObjective] = useState('2 trios');
   const [player1Sets, setPlayer1Sets] = useState<CardType[][]>([]);
   const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
+  const [gameLog, setGameLog] = useState<string[]>([]);
+  const [hasPlayer1GoneDown, setHasPlayer1GoneDown] = useState(false);
   const [hasPlayer2GoneDown, setHasPlayer2GoneDown] = useState(false);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function Home() {
     if (currentPlayer === 'p2') {
       setTimeout(() => {
         botMove();
-      }, 1000); 
+      }, 1000);
     }
   }, [currentPlayer]);
 
@@ -123,7 +125,7 @@ export default function Home() {
           objective: currentObjective,
         }),
       });
-  
+
       const data = await res.json();
 
       if (!data || !data.decision) {
@@ -133,10 +135,9 @@ export default function Home() {
       }
 
       const { drawFrom, discardCard, canGoDown, groups } = data.decision;
-  
+
       console.log('Bot decision:', data.decision);
-  
-      // Tomar carta
+
       if (drawFrom === 'deck') {
         const [card, ...rest] = deck;
         setPlayer2((prev) => [...prev, card]);
@@ -147,8 +148,7 @@ export default function Home() {
         setPlayer2((prev) => [...prev, card]);
         setDiscardPile(rest);
       }
-  
-      // Descartar carta
+
       const [rankSuit, deckNumber] = discardCard.split('-');
       const cardToDiscard = player2.find(
         (c) =>
@@ -168,8 +168,7 @@ export default function Home() {
         );
         setDiscardPile((prev) => [...prev, cardToDiscard]);
       }
-  
-      // Si puede bajarse, mover los grupos
+
       if (canGoDown) {
         const newGroups = groups.map((group: string[]) =>
           group
@@ -180,9 +179,9 @@ export default function Home() {
             )
             .filter(Boolean)
         );
-  
+
         setPlayer2Sets((prev) => [...prev, ...newGroups]);
-  
+
         const remaining = player2.filter(
           (c) =>
             !groups
@@ -192,12 +191,37 @@ export default function Home() {
         setPlayer2(remaining);
         setHasPlayer2GoneDown(true);
       }
-  
-      // Turno vuelve a Player 1
+
       setCurrentPlayer('p1');
       setHasDrawn(false);
     } catch (error) {
       console.error('Error in botMove:', error);
+    }
+  }
+
+  function handlePlayer1GoDown() {
+    const rankGroups: { [key: string]: CardType[] } = {};
+    player1.forEach((card) => {
+      const key = card.rank;
+      if (!rankGroups[key]) rankGroups[key] = [];
+      rankGroups[key].push(card);
+    });
+
+    const trios = Object.values(rankGroups).filter((group) => group.length >= 3);
+
+    if (trios.length >= 2) {
+      const newSets = trios.slice(0, 2).map((group) => group.slice(0, 3));
+
+      setPlayer1Sets((prev) => [...prev, ...newSets]);
+
+      const remaining = player1.filter(
+        (c) => !newSets.flat().includes(c)
+      );
+      setPlayer1(remaining);
+
+      setHasPlayer1GoneDown(true);
+    } else {
+      alert('Not ready to go down. You need: ' + currentObjective);
     }
   }
 
@@ -252,7 +276,7 @@ export default function Home() {
           <p>No sets yet.</p>
         ) : (
           player1Sets.map((set, i) => (
-            <div key={i} className="flex gap-1 mb-2">
+            <div key={i} className="flex gap-1 mb-1 scale-75">
               {set.map((card, j) => (
                 <Card key={j} card={card} />
               ))}
@@ -280,6 +304,12 @@ export default function Home() {
             </div>
           </SortableContext>
         </DndContext>
+        <button
+          className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
+          onClick={handlePlayer1GoDown}
+        >
+          Bajarse
+        </button>
       </div>
     </main>
   );
