@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { Card as CardType } from '@/lib/deck';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,12 +8,14 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
 
-    let botHand: any;
+    let botHand: CardType[] = [];
     let discardTop;
     let objective;
     try {
         const body = await request.json();
-        const { botHand, discardTop, objective } = body;
+        botHand = body.botHand;
+        discardTop = body.discardTop;
+        objective = body.objective;
 
         const prompt = `
 You are playing Carioca, a card game.
@@ -63,7 +66,7 @@ Decision:
 Current goal: ${objective}
 
 Your current hand (with deck numbers):
-${botHand.map((c: any) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
+${botHand.map((c: CardType) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
 
 The top card on the discard pile is: ${discardTop.rank}${discardTop.suit}-${discardTop.deckNumber}
 
@@ -97,7 +100,7 @@ Respond strictly as JSON:
                 "canGoDown": false,
                 "groups": [],
                 "drawFrom": "deck",
-                "discardCard": `${botHand?.[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`
+                "discardCard": `${botHand[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`
             },
         { status: 500 }
         );
