@@ -8,6 +8,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 
 import Card from '@/components/Card';
 import Deck from '@/components/Deck';
+import PlayerSet from '@/components/PlayerSets';
 import SortableCard from '@/components/SortableCard';
 
 export default function Home() {
@@ -258,20 +259,10 @@ export default function Home() {
             ))}
           </div>
         </div>
-        <div className="mt-4">
-          <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
-          {player2Sets.length === 0 ? (
-            <p>No sets yet.</p>
-          ) : (
-            player2Sets.map((set, i) => (
-              <div key={i} className="flex gap-1 mb-1 scale-75">
-                {set.map((card, j) => (
-                  <Card key={j} card={card} />
-                ))}
-              </div>
-            ))
-          )}
-        </div>
+        <PlayerSet 
+          player="Bot Sets (Player 2)"
+          playerSets={ player2Sets }
+        />
 
         <Deck
           deck={deck}
