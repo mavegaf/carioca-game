@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { generateDeck, shuffleDeck, Card as CardType } from '@/lib/deck';
+import { generateDeck, shuffleDeck, getCardId, Card as CardType } from '@/lib/deck';
 import {
   DndContext,
   closestCenter,
@@ -80,12 +80,7 @@ export default function Home() {
         setDiscardPile(rest);
       }
 
-      const [rankSuit, deckNumber] = discardCard.split('-');
-      const cardToDiscard = player2.find(
-        (c) =>
-          `${c.rank}${c.suit}` === rankSuit &&
-          `${c.deckNumber}` === deckNumber
-      );
+      const cardToDiscard = player2.find( (c) => getCardId(c) === discardCard );
       if (cardToDiscard) {
         setPlayer2((prev) =>
           prev.filter(
@@ -105,7 +100,7 @@ export default function Home() {
           group
             .map((id) =>
               player2.find(
-                (c) => `${c.rank}${c.suit}-${c.deckNumber}` === id
+                (c) => getCardId(c) === id
               )
             )
             .filter(Boolean)
@@ -117,7 +112,7 @@ export default function Home() {
           (c) =>
             !groups
               .flat()
-              .includes(`${c.rank}${c.suit}-${c.deckNumber}`)
+              .includes(getCardId(c))
         );
         setPlayer2(remaining);
         setHasPlayer2GoneDown(true);
@@ -161,8 +156,8 @@ export default function Home() {
     if (!over) return;
 
     if (active.id !== over.id) {
-      const oldIndex = player1.findIndex((c) => `${c.rank}${c.suit}-${c.deckNumber}` === active.id);
-      const newIndex = player1.findIndex((c) => `${c.rank}${c.suit}-${c.deckNumber}` === over.id);
+      const oldIndex = player1.findIndex((c) => getCardId(c) === active.id);
+      const newIndex = player1.findIndex((c) => getCardId(c) === over.id);
       setPlayer1((items) => arrayMove(items, oldIndex, newIndex));
     }
   }
@@ -174,7 +169,7 @@ export default function Home() {
       setPlayer1([...player1, card]);
       setGameLog('Player 1: Now discard a card');
       // To highlight the last card
-      setLastDrawnCardId(`${card.rank}${card.suit}-${card.deckNumber}`);
+      setLastDrawnCardId(getCardId(card));
       setTimeout(() => {
         setLastDrawnCardId(null);
       }, 2000);
@@ -192,7 +187,7 @@ export default function Home() {
     if (currentPlayer === 'p1') {
       setPlayer1([...player1, card]);
       setGameLog('Player 1: Now discard a card');
-      setLastDrawnCardId(`${card.rank}${card.suit}-${card.deckNumber}`);
+      setLastDrawnCardId(getCardId(card));
       setTimeout(() => {
         setLastDrawnCardId(null);
       }, 2000);
@@ -206,10 +201,10 @@ export default function Home() {
   function discardCard(cardId: string) {
     if (!hasDrawn) return;
 
-    const card = player1.find((c) => `${c.rank}${c.suit}-${c.deckNumber}` === cardId);
+    const card = player1.find((c) => getCardId(c) === cardId);
     if (!card) return;
 
-    setPlayer1(player1.filter((c) => `${c.rank}${c.suit}-${c.deckNumber}` !== cardId));
+    setPlayer1(player1.filter((c) => getCardId(c) !== cardId));
     setDiscardPile([...discardPile, card]);
     setCurrentPlayer('p2');
     setGameLog('Player 2. Thinking...');
@@ -331,17 +326,17 @@ export default function Home() {
           <h2 className="font-bold mb-2"><span className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1' : ''}`}>Player 1 (You)</span></h2>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext
-              items={player1.map((c) => `${c.rank}${c.suit}-${c.deckNumber}`)}
+              items={player1.map((c) => getCardId(c))}
               strategy={verticalListSortingStrategy}
             >
               <div className="flex gap-1 flex-wrap justify-center">
                 {player1.map((c) => (
                   <SortableCard
-                    key={`${c.rank}${c.suit}-${c.deckNumber}`}
-                    id={`${c.rank}${c.suit}-${c.deckNumber}`}
+                    key={getCardId(c)}
+                    id={getCardId(c)}
                     card={c}
-                    onDoubleClick={() => discardCard(`${c.rank}${c.suit}-${c.deckNumber}`)}
-                    highlight={lastDrawnCardId === `${c.rank}${c.suit}-${c.deckNumber}`}
+                    onDoubleClick={() => discardCard(getCardId(c))}
+                    highlight={lastDrawnCardId === getCardId(c)}
                   />
                 ))}
               </div>

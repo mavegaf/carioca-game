@@ -28,3 +28,7 @@ export function shuffleDeck(deck: Card[]): Card[] {
     return shuffled;
 
 }
+
+export function getCardId(card: Card): string {
+    return `${card.rank}${card.suit}-${card.deckNumber}`;
+}
