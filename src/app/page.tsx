@@ -7,6 +7,7 @@ import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-ki
 import type { DragEndEvent } from '@dnd-kit/core';
 
 import Card from '@/components/Card';
+import Deck from '@/components/Deck';
 import SortableCard from '@/components/SortableCard';
 
 export default function Home() {
@@ -272,21 +273,12 @@ export default function Home() {
           )}
         </div>
 
-        <div className="flex gap-2 mb-2 justify-center">
-          <div
-            className="w-16 h-24 bg-gray-300 rounded-lg flex items-center justify-center cursor-pointer"
-            onClick={drawFromDeck}
-          >
-            Deck ({deck.length})
-          </div>
-
-          <div
-            className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer"
-            onClick={drawFromDiscard}
-          >
-            {discardPile.length > 0 ? <Card card={discardPile[discardPile.length - 1]} /> : 'Empty'}
-          </div>
-        </div>
+        <Deck
+          deck={deck}
+          discardPile={discardPile}
+          drawFromDeck={drawFromDeck}
+          drawFromDiscard={drawFromDiscard}
+        />
 
         {/* Player (Player 1) */}
         <div className="mt-4">
