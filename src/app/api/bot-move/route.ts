@@ -7,17 +7,16 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
+  let botHand: CardType[] = [];
+  let discardTop;
+  let objective;
+  try {
+    const body = await request.json();
+    botHand = body.botHand;
+    discardTop = body.discardTop;
+    objective = body.objective;
 
-    let botHand: CardType[] = [];
-    let discardTop;
-    let objective;
-    try {
-        const body = await request.json();
-        botHand = body.botHand;
-        discardTop = body.discardTop;
-        objective = body.objective;
-
-        const prompt = `
+    const prompt = `
 You are playing Carioca, a card game.
 
 Game definitions:
@@ -79,30 +78,30 @@ Respond strictly as JSON:
 }
 `;
 
-        const completion = await openai.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'gpt-4-turbo',
-        });
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-4-turbo',
+    });
 
-        const reply = completion.choices[0].message?.content;
-        const jsonMatch = reply?.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            console.log(jsonMatch);
-            throw new Error('No JSON block found in OpenAI response');
-        }
-        const decision = JSON.parse(jsonMatch[0]);
+    const reply = completion.choices[0].message?.content;
+    const jsonMatch = reply?.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log(jsonMatch);
+      throw new Error('No JSON block found in OpenAI response');
+    }
+    const decision = JSON.parse(jsonMatch[0]);
 
-        return NextResponse.json({ decision });
-    } catch (error) {
-        console.error('Bot move error:', error);
-        return NextResponse.json(
-            {
-                "canGoDown": false,
-                "groups": [],
-                "drawFrom": "deck",
-                "discardCard": `${botHand[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`
-            },
-        { status: 500 }
-        );
+    return NextResponse.json({ decision });
+  } catch (error) {
+    console.error('Bot move error:', error);
+    return NextResponse.json(
+      {
+        canGoDown: false,
+        groups: [],
+        drawFrom: 'deck',
+        discardCard: `${botHand[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`,
+      },
+      { status: 500 }
+    );
   }
 }

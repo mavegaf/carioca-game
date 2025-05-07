@@ -2,18 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { generateDeck, shuffleDeck, getCardId, Card as CardType } from '@/lib/deck';
-import {
-  DndContext,
-  closestCenter,
-  useSensor,
-  useSensors,
-  PointerSensor,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 import Card from '@/components/Card';
@@ -58,11 +48,11 @@ export default function Home() {
         console.error('Bot move response missing decision:', data);
         // lets do anything so don't block the game
         data = {
-          "canGoDown": false,
-          "groups": [],
-          "drawFrom": "deck",
-          "discardCard": `${player2[0].rank}${player2[0].suit}${player2[0].deckNumber}`
-        }
+          canGoDown: false,
+          groups: [],
+          drawFrom: 'deck',
+          discardCard: `${player2[0].rank}${player2[0].suit}${player2[0].deckNumber}`,
+        };
       }
 
       const { drawFrom, discardCard, canGoDown, groups } = data.decision;
@@ -71,20 +61,20 @@ export default function Home() {
 
       if (drawFrom === 'deck') {
         const [card, ...rest] = deck;
-        setPlayer2((prev) => [...prev, card]);
+        setPlayer2(prev => [...prev, card]);
         setDeck(rest);
       } else if (drawFrom === 'discard') {
         const card = discardPile[discardPile.length - 1];
         const rest = discardPile.slice(0, -1);
-        setPlayer2((prev) => [...prev, card]);
+        setPlayer2(prev => [...prev, card]);
         setDiscardPile(rest);
       }
 
-      const cardToDiscard = player2.find( (c) => getCardId(c) === discardCard );
+      const cardToDiscard = player2.find(c => getCardId(c) === discardCard);
       if (cardToDiscard) {
-        setPlayer2((prev) =>
+        setPlayer2(prev =>
           prev.filter(
-            (c) =>
+            c =>
               !(
                 c.rank === cardToDiscard.rank &&
                 c.suit === cardToDiscard.suit &&
@@ -92,28 +82,17 @@ export default function Home() {
               )
           )
         );
-        setDiscardPile((prev) => [...prev, cardToDiscard]);
+        setDiscardPile(prev => [...prev, cardToDiscard]);
       }
 
       if (canGoDown) {
         const newGroups = groups.map((group: string[]) =>
-          group
-            .map((id) =>
-              player2.find(
-                (c) => getCardId(c) === id
-              )
-            )
-            .filter(Boolean)
+          group.map(id => player2.find(c => getCardId(c) === id)).filter(Boolean)
         );
 
-        setPlayer2Sets((prev) => [...prev, ...newGroups]);
+        setPlayer2Sets(prev => [...prev, ...newGroups]);
 
-        const remaining = player2.filter(
-          (c) =>
-            !groups
-              .flat()
-              .includes(getCardId(c))
-        );
+        const remaining = player2.filter(c => !groups.flat().includes(getCardId(c)));
         setPlayer2(remaining);
         setHasPlayer2GoneDown(true);
       }
@@ -146,7 +125,7 @@ export default function Home() {
       setTimeout(() => {
         botMove();
       }, 1000);
-    } 
+    }
   }, [currentPlayer, botMove]);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -156,9 +135,9 @@ export default function Home() {
     if (!over) return;
 
     if (active.id !== over.id) {
-      const oldIndex = player1.findIndex((c) => getCardId(c) === active.id);
-      const newIndex = player1.findIndex((c) => getCardId(c) === over.id);
-      setPlayer1((items) => arrayMove(items, oldIndex, newIndex));
+      const oldIndex = player1.findIndex(c => getCardId(c) === active.id);
+      const newIndex = player1.findIndex(c => getCardId(c) === over.id);
+      setPlayer1(items => arrayMove(items, oldIndex, newIndex));
     }
   }
 
@@ -201,10 +180,10 @@ export default function Home() {
   function discardCard(cardId: string) {
     if (!hasDrawn) return;
 
-    const card = player1.find((c) => getCardId(c) === cardId);
+    const card = player1.find(c => getCardId(c) === cardId);
     if (!card) return;
 
-    setPlayer1(player1.filter((c) => getCardId(c) !== cardId));
+    setPlayer1(player1.filter(c => getCardId(c) !== cardId));
     setDiscardPile([...discardPile, card]);
     setCurrentPlayer('p2');
     setGameLog('Player 2. Thinking...');
@@ -213,22 +192,20 @@ export default function Home() {
 
   function handlePlayer1GoDown() {
     const rankGroups: { [key: string]: CardType[] } = {};
-    player1.forEach((card) => {
+    player1.forEach(card => {
       const key = card.rank;
       if (!rankGroups[key]) rankGroups[key] = [];
       rankGroups[key].push(card);
     });
 
-    const trios = Object.values(rankGroups).filter((group) => group.length >= 3);
+    const trios = Object.values(rankGroups).filter(group => group.length >= 3);
 
     if (trios.length >= 2) {
-      const newSets = trios.slice(0, 2).map((group) => group.slice(0, 3));
+      const newSets = trios.slice(0, 2).map(group => group.slice(0, 3));
 
-      setPlayer1Sets((prev) => [...prev, ...newSets]);
+      setPlayer1Sets(prev => [...prev, ...newSets]);
 
-      const remaining = player1.filter(
-        (c) => !newSets.flat().includes(c)
-      );
+      const remaining = player1.filter(c => !newSets.flat().includes(c));
       setPlayer1(remaining);
 
       setHasPlayer1GoneDown(true);
@@ -240,7 +217,9 @@ export default function Home() {
   return (
     <main className="flex w-full max-w-6xl mx-auto">
       <div className="w-1/4 p-4 bg-gray-50 rounded">
-        <h3 className="font-bold mb-2"><a href="https://es.wikipedia.org/wiki/Carioca_(juego)">Carioca</a></h3>
+        <h3 className="font-bold mb-2">
+          <a href="https://es.wikipedia.org/wiki/Carioca_(juego)">Carioca</a>
+        </h3>
         <ul className="text-sm list-disc list-inside mb-4">
           <li>Built with Next.js.</li>
           <li>Uses the OpenAI API for bot logic.</li>
@@ -261,19 +240,25 @@ export default function Home() {
         </ul>
         <h3 className="font-bold mb-2">Game status</h3>
         <div className="text-sm max-h-96 overflow-y-auto bg-white p-2 rounded border">
-            <div>{gameLog}</div>
+          <div>{gameLog}</div>
         </div>
       </div>
       <div className="w-3/4 p-4 justify-center text-center">
         {/* Bot (Player 2) */}
         <div className="mb-4 text-center">
-          <h2 className="font-bold mb-2"><span className={` ${currentPlayer == 'p2' ? 'border-2 border-green-500 p-1' : ''}`}>Bot (Player 2)</span></h2>
+          <h2 className="font-bold mb-2">
+            <span className={` ${currentPlayer == 'p2' ? 'border-2 border-green-500 p-1' : ''}`}>
+              Bot (Player 2)
+            </span>
+          </h2>
           <div className="flex gap-1 flex-wrap justify-center h-24">
-            {player2.map((c, i) => <Card key={i} card={c} />)}
+            {player2.map((c, i) => (
+              <Card key={i} card={c} />
+            ))}
           </div>
         </div>
         <div className="mt-4">
-        <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
+          <h3 className="font-bold mb-1">Bot Sets (Player 2)</h3>
           {player2Sets.length === 0 ? (
             <p>No sets yet.</p>
           ) : (
@@ -299,11 +284,7 @@ export default function Home() {
             className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer"
             onClick={drawFromDiscard}
           >
-            {discardPile.length > 0 ? (
-              <Card card={discardPile[discardPile.length - 1]} />
-            ) : (
-              'Empty'
-            )}
+            {discardPile.length > 0 ? <Card card={discardPile[discardPile.length - 1]} /> : 'Empty'}
           </div>
         </div>
 
@@ -323,14 +304,22 @@ export default function Home() {
           )}
         </div>
         <div className="text-center">
-          <h2 className="font-bold mb-2"><span className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1' : ''}`}>Player 1 (You)</span></h2>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <h2 className="font-bold mb-2">
+            <span className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1' : ''}`}>
+              Player 1 (You)
+            </span>
+          </h2>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext
-              items={player1.map((c) => getCardId(c))}
+              items={player1.map(c => getCardId(c))}
               strategy={verticalListSortingStrategy}
             >
               <div className="flex gap-1 flex-wrap justify-center">
-                {player1.map((c) => (
+                {player1.map(c => (
                   <SortableCard
                     key={getCardId(c)}
                     id={getCardId(c)}
