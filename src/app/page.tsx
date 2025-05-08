@@ -253,16 +253,13 @@ export default function Home() {
               Bot (Player 2)
             </span>
           </h2>
-          <div className="flex gap-1 flex-wrap justify-center h-24">
+          <div className="flex gap-1 flex-wrap justify-center">
             {player2.map((c, i) => (
               <Card key={i} card={c} />
             ))}
           </div>
         </div>
-        <PlayerSet 
-          player="Bot Sets (Player 2)"
-          playerSets={ player2Sets }
-        />
+        <PlayerSet playerSets={player2Sets} />
 
         <Deck
           deck={deck}
@@ -271,21 +268,7 @@ export default function Home() {
           drawFromDiscard={drawFromDiscard}
         />
 
-        {/* Player (Player 1) */}
-        <div className="mt-4">
-          <h3 className="font-bold mb-1">Player 1 Sets (You)</h3>
-          {player1Sets.length === 0 ? (
-            <p>No sets yet.</p>
-          ) : (
-            player1Sets.map((set, i) => (
-              <div key={i} className="flex gap-1 mb-1 scale-75">
-                {set.map((card, j) => (
-                  <Card key={j} card={card} />
-                ))}
-              </div>
-            ))
-          )}
-        </div>
+        <PlayerSet playerSets={player1Sets} />
         <div className="text-center">
           <h2 className="font-bold mb-2">
             <span className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1' : ''}`}>
