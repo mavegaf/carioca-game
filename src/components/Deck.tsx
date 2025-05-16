@@ -1,17 +1,17 @@
 import Card from '@/components/Card';
-import { Card as CardType } from '@/lib/deck';
+import { useDeck } from '@/contexts/DeckContext';
+
 
 export default function Deck({
-  deck,
-  discardPile,
   drawFromDeck,
   drawFromDiscard,
 }: {
-  deck: CardType[];
-  discardPile: CardType[];
   drawFromDeck: () => void;
   drawFromDiscard: () => void;
 }) {
+  const { deck, discardPile } = useDeck();
+
+
   return (
     <div className="flex gap-2 mb-2 justify-center">
       <div

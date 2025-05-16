@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { getCardId, Card, goDown } from '@/lib/deck';
+import { useDeck } from '@/contexts/DeckContext';
+
+type CardSourceType = 'deck' | 'discard';
 
 type Props = {
     currentPlayer: 'p1' | 'p2';
     player2Cards: Card[];
-    discardPile: Card[];
     currentObjective: string;
-    drawFrom: (from: 'deck' | 'discard') => void;
+    handleDrawFrom: (source: CardSourceType) => void;
     setPlayer2Cards: React.Dispatch<React.SetStateAction<Card[]>>;
     setPlayer2Sets: React.Dispatch<React.SetStateAction<Card[][]>>;
-    setDiscardPile: React.Dispatch<React.SetStateAction<Card[]>>;
     setCurrentPlayer: (player: 'p1' | 'p2') => void;
     setGameLog: (log: string) => void;
 };
@@ -19,20 +20,20 @@ type BotPhases = 'idle' | 'drawing' | 'go-down' | 'discarding';
 export function useBotPlayer({
     currentPlayer,
     player2Cards,
-    discardPile,
     currentObjective,
-    drawFrom,
+    handleDrawFrom,
     setPlayer2Cards,
     setPlayer2Sets,
-    setDiscardPile,
     setCurrentPlayer,
     setGameLog,
 }: Props) {
 
+    const { discardPile, setDiscardPile } = useDeck();
     const [botPhase, setBotPhase] = useState<BotPhases>('idle');
 
     /**
      * When changes from player p1 to p2, we start the flow
+     * 
      */
     useEffect(() => {
         if (currentPlayer === 'p2') {
@@ -68,12 +69,12 @@ export function useBotPlayer({
 
                 const drawFromDecision = data?.decision?.drawFrom ?? 'deck';
 
-                drawFrom(drawFromDecision);
+                handleDrawFrom(drawFromDecision);
                 console.log('picked from ');
                 console.log(drawFromDecision);
             } catch (error) {
                 console.error('Error in botDraw:', error);
-                drawFrom('deck');
+                handleDrawFrom('deck');
             }
             setBotPhase('go-down');
         };
@@ -172,7 +173,5 @@ export function useBotPlayer({
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [botPhase]);
-
-
 
 }
