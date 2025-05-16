@@ -10,6 +10,7 @@ import Card from '@/components/Card';
 import Deck from '@/components/Deck';
 import PlayerSet from '@/components/PlayerSets';
 import SortableCard from '@/components/SortableCard';
+import { useBotPlayer } from '@/hooks/useBotPlayer';
 
 let didInit = false;
 type CardSourceType = 'deck' | 'discard';
@@ -37,11 +38,7 @@ export default function Home() {
     () => (player1Cards.length + player1Sets.flat().length === 12 ? false : true),
     [player1Cards, player1Sets]
   );
-  const player2HasDrawn = useMemo(
-    () =>
-      player2Cards.length + player2Sets.reduce((acc, s) => acc + s.length, 0) === 12 ? false : true,
-    [player2Cards, player2Sets]
-  );
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const player1GoneDown = player1Sets.reduce((acc, s) => acc + s.length, 0) > 0 ? true : false;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -66,127 +63,18 @@ export default function Home() {
     }
   }, []);
 
-  /**
-   * Player2 draw a card when it is its turn and already draw a card
-   *
-   * This effect is triggered when player2Cards changes (to calculate player2HasDrawn)
-   * and it needs the last value of currentPlayer
-   */
-  useEffect(() => {
-    console.log('player2BotDraw ' + currentPlayer + ' ' + player2HasDrawn);
-
-    if (currentPlayer !== 'p2' || !player2HasDrawn) {
-      return;
-    }
-
-    const player2BotDraw = async () => {
-      try {
-        setGameLog('Player 2: Deciding which card to draw...');
-        const res = await fetch('/api/bot-move', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            botHand: player2Cards,
-            objective: currentObjective,
-          }),
-        });
-
-        let data = await res.json();
-        setGameLog('Player 2: Playing');
-
-        if (!data || !data.decision) {
-          console.error('Bot move response missing decision:', data);
-          // lets do anything so don't block the game
-          data = {
-            canGoDown: false,
-            groups: [],
-            discardCard: `${player2Cards[0].rank}${player2Cards[0].suit}${player2Cards[0].deckNumber}`,
-          };
-        }
-
-        const { discardCard, canGoDown, groups } = data.decision;
-
-        console.log('Bot decision:', data.decision);
-
-        if (canGoDown) {
-          const newGroups = groups.map((group: string[]) =>
-            group.map(id => player2Cards.find(c => getCardId(c) === id)).filter(Boolean)
-          );
-
-          setPlayer2Sets(prev => [...prev, ...newGroups]);
-
-          const remaining = player2Cards.filter(c => !groups.flat().includes(getCardId(c)));
-          setPlayer2Cards(remaining);
-        }
-
-        const cardToDiscard = player2Cards.find(c => getCardId(c) === discardCard);
-        if (cardToDiscard) {
-          setPlayer2Cards(prev =>
-            prev.filter(
-              c =>
-                !(
-                  c.rank === cardToDiscard.rank &&
-                  c.suit === cardToDiscard.suit &&
-                  c.deckNumber === cardToDiscard.deckNumber
-                )
-            )
-          );
-          setDiscardPile(prev => [...prev, cardToDiscard]);
-
-          setCurrentPlayer('p1');
-          setGameLog('Player 1. Take a card');
-        }
-      } catch (error) {
-        console.error('Error in botMove:', error);
-      }
-    };
-
-    player2BotDraw();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPlayer, player2Cards]);
-
-  /**
-   * Player 2 pick a card when it is their turn.
-   *
-   * This effect is triggered only when currentPlayer changes and it is p2
-   */
-  useEffect(() => {
-    if (currentPlayer !== 'p2' || player2HasDrawn) {
-      return;
-    }
-
-    // Current player is p2 (bot) it needs to pick a card
-    const player2BotPickACard = async () => {
-      try {
-        setGameLog('Player 2: Deciding which card to pick...');
-        const res = await fetch('/api/bot-draw', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            botHand: player2Cards,
-            discardTop: discardPile[discardPile.length - 1],
-            objective: currentObjective,
-          }),
-        });
-
-        const data = await res.json();
-
-        const drawFromDecision = data?.decision?.drawFrom ?? 'deck';
-
-        drawFrom(drawFromDecision);
-        console.log('picked from ');
-        console.log(drawFromDecision);
-      } catch (error) {
-        console.error('Error in botDraw:', error);
-        drawFrom('deck');
-      }
-    };
-
-    player2BotPickACard();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPlayer]);
+  useBotPlayer({
+    currentPlayer,
+    player2Cards,
+    discardPile,
+    currentObjective,
+    drawFrom,
+    setPlayer2Cards,
+    setPlayer2Sets,
+    setDiscardPile,
+    setCurrentPlayer,
+    setGameLog,
+  });
 
   const sensors = useSensors(useSensor(PointerSensor));
 

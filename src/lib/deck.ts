@@ -31,3 +31,31 @@ export function shuffleDeck(deck: Card[]): Card[] {
 export function getCardId(card: Card): string {
   return `${card.rank}${card.suit}-${card.deckNumber}`;
 }
+
+export function goDown(objetive: string, cards: Card[]) {
+
+  if (objetive === '2 trios') {
+    const rankGroup: Record<string, Card[]> = {};
+    for (const card of cards) {
+      if (!rankGroup[card.rank]) {
+        rankGroup[card.rank] = [];
+      }
+      rankGroup[card.rank].push(card);
+    }
+
+    const trios = Object.values(rankGroup).filter(group => group.length >= 3);
+
+    if (trios.length < 2) {
+      return [];
+    }
+
+    trios.sort((a, b) => b.length - a.length);
+
+    return trios.slice(0, 2).map(group => group.slice(0, 3));
+
+  } else {
+    // TODO implement others objetives
+    return [];
+  }
+
+}
