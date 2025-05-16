@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { generateDeck, shuffleDeck, getCardId, Card as CardType } from '@/lib/deck';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -11,124 +11,182 @@ import Deck from '@/components/Deck';
 import PlayerSet from '@/components/PlayerSets';
 import SortableCard from '@/components/SortableCard';
 
+let didInit = false;
+type CardSourceType = 'deck' | 'discard';
+type CurrentPlayerType = 'p1' | 'p2';
+
 export default function Home() {
+  // Deck
   const [deck, setDeck] = useState<CardType[]>([]);
-  const [player1, setPlayer1] = useState<CardType[]>([]);
-  const [player2, setPlayer2] = useState<CardType[]>([]);
   const [discardPile, setDiscardPile] = useState<CardType[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<'p1' | 'p2'>('p1');
-  const [hasDrawn, setHasDrawn] = useState(false);
+  const [currentPlayer, setCurrentPlayer] = useState<CurrentPlayerType>('p1');
+
+  // P1
+  const [player1Cards, setPlayer1Cards] = useState<CardType[]>([]);
+  const [player1Sets, setPlayer1Sets] = useState<CardType[][]>([]);
+  const [player2Cards, setPlayer2Cards] = useState<CardType[]>([]);
+
   const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentObjective, setCurrentObjective] = useState('2 trios');
-  const [player1Sets, setPlayer1Sets] = useState<CardType[][]>([]);
+
   const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
   const [gameLog, setGameLog] = useState<string>('');
+
+  const player1HasDrawn = useMemo(
+    () => (player1Cards.length + player1Sets.flat().length === 12 ? false : true),
+    [player1Cards, player1Sets]
+  );
+  const player2HasDrawn = useMemo(
+    () =>
+      player2Cards.length + player2Sets.reduce((acc, s) => acc + s.length, 0) === 12 ? false : true,
+    [player2Cards, player2Sets]
+  );
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasPlayer1GoneDown, setHasPlayer1GoneDown] = useState(false);
+  const player1GoneDown = player1Sets.reduce((acc, s) => acc + s.length, 0) > 0 ? true : false;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasPlayer2GoneDown, setHasPlayer2GoneDown] = useState(false);
+  const player2GoneDown = player2Sets.reduce((acc, s) => acc + s.length, 0) > 0 ? true : false;
 
-  const botMove = useCallback(async () => {
-    try {
-      setGameLog('Player 2: Calculating best move...');
-      const res = await fetch('/api/bot-move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          botHand: player2,
-          discardTop: discardPile[discardPile.length - 1],
-          objective: currentObjective,
-        }),
-      });
+  useEffect(() => {
+    if (!didInit) {
+      didInit = true;
 
-      setGameLog('Player 2: Calculating best move...');
-      let data = await res.json();
-      setGameLog('Player 2: Playing');
+      const newDeck = shuffleDeck(generateDeck());
+      const p1 = newDeck.slice(0, 12);
+      const p2 = newDeck.slice(12, 24);
+      const firstDiscard = newDeck[24];
+      const remaining = newDeck.slice(25);
 
-      if (!data || !data.decision) {
-        console.error('Bot move response missing decision:', data);
-        // lets do anything so don't block the game
-        data = {
-          canGoDown: false,
-          groups: [],
-          drawFrom: 'deck',
-          discardCard: `${player2[0].rank}${player2[0].suit}${player2[0].deckNumber}`,
-        };
-      }
-
-      const { drawFrom, discardCard, canGoDown, groups } = data.decision;
-
-      console.log('Bot decision:', data.decision);
-
-      if (drawFrom === 'deck') {
-        const [card, ...rest] = deck;
-        setPlayer2(prev => [...prev, card]);
-        setDeck(rest);
-      } else if (drawFrom === 'discard') {
-        const card = discardPile[discardPile.length - 1];
-        const rest = discardPile.slice(0, -1);
-        setPlayer2(prev => [...prev, card]);
-        setDiscardPile(rest);
-      }
-
-      const cardToDiscard = player2.find(c => getCardId(c) === discardCard);
-      if (cardToDiscard) {
-        setPlayer2(prev =>
-          prev.filter(
-            c =>
-              !(
-                c.rank === cardToDiscard.rank &&
-                c.suit === cardToDiscard.suit &&
-                c.deckNumber === cardToDiscard.deckNumber
-              )
-          )
-        );
-        setDiscardPile(prev => [...prev, cardToDiscard]);
-      }
-
-      if (canGoDown) {
-        const newGroups = groups.map((group: string[]) =>
-          group.map(id => player2.find(c => getCardId(c) === id)).filter(Boolean)
-        );
-
-        setPlayer2Sets(prev => [...prev, ...newGroups]);
-
-        const remaining = player2.filter(c => !groups.flat().includes(getCardId(c)));
-        setPlayer2(remaining);
-        setHasPlayer2GoneDown(true);
-      }
-
+      setPlayer1Cards(p1);
+      setPlayer2Cards(p2);
+      setDiscardPile([firstDiscard]);
+      setDeck(remaining);
       setCurrentPlayer('p1');
       setGameLog('Player 1. Take a card');
-      setHasDrawn(false);
-    } catch (error) {
-      console.error('Error in botMove:', error);
     }
-  }, [player2, discardPile, currentObjective, deck]);
-
-  useEffect(() => {
-    const newDeck = shuffleDeck(generateDeck());
-    const p1 = newDeck.slice(0, 12);
-    const p2 = newDeck.slice(12, 24);
-    const firstDiscard = newDeck[24];
-    const remaining = newDeck.slice(25);
-
-    setPlayer1(p1);
-    setPlayer2(p2);
-    setDiscardPile([firstDiscard]);
-    setDeck(remaining);
-    setCurrentPlayer('p1');
-    setGameLog('Player 1. Take a card');
   }, []);
 
+  /**
+   * Player2 draw a card when it is its turn and already draw a card
+   *
+   * This effect is triggered when player2Cards changes (to calculate player2HasDrawn)
+   * and it needs the last value of currentPlayer
+   */
   useEffect(() => {
-    if (currentPlayer === 'p2') {
-      setTimeout(() => {
-        botMove();
-      }, 1000);
+    console.log('player2BotDraw ' + currentPlayer + ' ' + player2HasDrawn);
+
+    if (currentPlayer !== 'p2' || !player2HasDrawn) {
+      return;
     }
-  }, [currentPlayer, botMove]);
+
+    const player2BotDraw = async () => {
+      try {
+        setGameLog('Player 2: Deciding which card to draw...');
+        const res = await fetch('/api/bot-move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            botHand: player2Cards,
+            objective: currentObjective,
+          }),
+        });
+
+        let data = await res.json();
+        setGameLog('Player 2: Playing');
+
+        if (!data || !data.decision) {
+          console.error('Bot move response missing decision:', data);
+          // lets do anything so don't block the game
+          data = {
+            canGoDown: false,
+            groups: [],
+            discardCard: `${player2Cards[0].rank}${player2Cards[0].suit}${player2Cards[0].deckNumber}`,
+          };
+        }
+
+        const { discardCard, canGoDown, groups } = data.decision;
+
+        console.log('Bot decision:', data.decision);
+
+        if (canGoDown) {
+          const newGroups = groups.map((group: string[]) =>
+            group.map(id => player2Cards.find(c => getCardId(c) === id)).filter(Boolean)
+          );
+
+          setPlayer2Sets(prev => [...prev, ...newGroups]);
+
+          const remaining = player2Cards.filter(c => !groups.flat().includes(getCardId(c)));
+          setPlayer2Cards(remaining);
+        }
+
+        const cardToDiscard = player2Cards.find(c => getCardId(c) === discardCard);
+        if (cardToDiscard) {
+          setPlayer2Cards(prev =>
+            prev.filter(
+              c =>
+                !(
+                  c.rank === cardToDiscard.rank &&
+                  c.suit === cardToDiscard.suit &&
+                  c.deckNumber === cardToDiscard.deckNumber
+                )
+            )
+          );
+          setDiscardPile(prev => [...prev, cardToDiscard]);
+
+          setCurrentPlayer('p1');
+          setGameLog('Player 1. Take a card');
+        }
+      } catch (error) {
+        console.error('Error in botMove:', error);
+      }
+    };
+
+    player2BotDraw();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlayer, player2Cards]);
+
+  /**
+   * Player 2 pick a card when it is their turn.
+   *
+   * This effect is triggered only when currentPlayer changes and it is p2
+   */
+  useEffect(() => {
+    if (currentPlayer !== 'p2' || player2HasDrawn) {
+      return;
+    }
+
+    // Current player is p2 (bot) it needs to pick a card
+    const player2BotPickACard = async () => {
+      try {
+        setGameLog('Player 2: Deciding which card to pick...');
+        const res = await fetch('/api/bot-draw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            botHand: player2Cards,
+            discardTop: discardPile[discardPile.length - 1],
+            objective: currentObjective,
+          }),
+        });
+
+        const data = await res.json();
+
+        const drawFromDecision = data?.decision?.drawFrom ?? 'deck';
+
+        drawFrom(drawFromDecision);
+        console.log('picked from ');
+        console.log(drawFromDecision);
+      } catch (error) {
+        console.error('Error in botDraw:', error);
+        drawFrom('deck');
+      }
+    };
+
+    player2BotPickACard();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlayer]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -137,64 +195,60 @@ export default function Home() {
     if (!over) return;
 
     if (active.id !== over.id) {
-      const oldIndex = player1.findIndex(c => getCardId(c) === active.id);
-      const newIndex = player1.findIndex(c => getCardId(c) === over.id);
-      setPlayer1(items => arrayMove(items, oldIndex, newIndex));
+      const oldIndex = player1Cards.findIndex(c => getCardId(c) === active.id);
+      const newIndex = player1Cards.findIndex(c => getCardId(c) === over.id);
+      setPlayer1Cards(items => arrayMove(items, oldIndex, newIndex));
     }
   }
 
-  function drawFromDeck() {
-    if (currentPlayer !== 'p1' || deck.length === 0 || hasDrawn) return;
-    const [card, ...rest] = deck;
+  function drawFrom(from: CardSourceType) {
+    if (currentPlayer === 'p1' && player1HasDrawn) return;
+
+    let card: CardType;
+    let rest: CardType[];
+    if (from == 'deck') {
+      if (deck.length <= 0) {
+        return;
+      }
+      [card, ...rest] = deck;
+      setDeck(rest);
+    } else if (from == 'discard') {
+      if (discardPile.length <= 0) {
+        return;
+      }
+      card = discardPile[discardPile.length - 1];
+      setDiscardPile(discardPile.slice(0, -1));
+    } else {
+      return;
+    }
+
     if (currentPlayer === 'p1') {
-      setPlayer1([...player1, card]);
+      setPlayer1Cards([...player1Cards, card]);
       setGameLog('Player 1: Now discard a card');
-      // To highlight the last card
       setLastDrawnCardId(getCardId(card));
       setTimeout(() => {
         setLastDrawnCardId(null);
       }, 2000);
-    } else {
-      setPlayer2([...player2, card]);
+    } else if (currentPlayer === 'p2') {
+      setPlayer2Cards([...player2Cards, card]);
     }
-    setDeck(rest);
-    setHasDrawn(true);
-  }
-
-  function drawFromDiscard() {
-    if (currentPlayer !== 'p1' || discardPile.length === 0 || hasDrawn) return;
-    const card = discardPile[discardPile.length - 1];
-    const rest = discardPile.slice(0, -1);
-    if (currentPlayer === 'p1') {
-      setPlayer1([...player1, card]);
-      setGameLog('Player 1: Now discard a card');
-      setLastDrawnCardId(getCardId(card));
-      setTimeout(() => {
-        setLastDrawnCardId(null);
-      }, 2000);
-    } else {
-      setPlayer2([...player2, card]);
-    }
-    setDiscardPile(rest);
-    setHasDrawn(true);
   }
 
   function discardCard(cardId: string) {
-    if (!hasDrawn) return;
+    if (!player1HasDrawn) return;
 
-    const card = player1.find(c => getCardId(c) === cardId);
+    const card = player1Cards.find(c => getCardId(c) === cardId);
     if (!card) return;
 
-    setPlayer1(player1.filter(c => getCardId(c) !== cardId));
+    setPlayer1Cards(player1Cards.filter(c => getCardId(c) !== cardId));
     setDiscardPile([...discardPile, card]);
-    setCurrentPlayer('p2');
     setGameLog('Player 2. Thinking...');
-    setHasDrawn(false);
+    setCurrentPlayer('p2');
   }
 
   function handlePlayer1GoDown() {
     const rankGroups: { [key: string]: CardType[] } = {};
-    player1.forEach(card => {
+    player1Cards.forEach(card => {
       const key = card.rank;
       if (!rankGroups[key]) rankGroups[key] = [];
       rankGroups[key].push(card);
@@ -207,10 +261,8 @@ export default function Home() {
 
       setPlayer1Sets(prev => [...prev, ...newSets]);
 
-      const remaining = player1.filter(c => !newSets.flat().includes(c));
-      setPlayer1(remaining);
-
-      setHasPlayer1GoneDown(true);
+      const remaining = player1Cards.filter(c => !newSets.flat().includes(c));
+      setPlayer1Cards(remaining);
     } else {
       alert('Not ready to go down. You need: ' + currentObjective);
     }
@@ -249,12 +301,14 @@ export default function Home() {
         {/* Bot (Player 2) */}
         <div className="mb-4 text-center">
           <h2 className="font-bold mb-2">
-            <span className={` ${currentPlayer == 'p2' ? 'border-2 border-green-500 p-1' : ''}`}>
+            <span
+              className={` ${currentPlayer == 'p2' ? 'border-2 border-green-500 p-1 rounded-lg' : ''}`}
+            >
               Bot (Player 2)
             </span>
           </h2>
           <div className="flex gap-1 flex-wrap justify-center">
-            {player2.map((c, i) => (
+            {player2Cards.map((c, i) => (
               <Card key={i} card={c} />
             ))}
           </div>
@@ -264,14 +318,16 @@ export default function Home() {
         <Deck
           deck={deck}
           discardPile={discardPile}
-          drawFromDeck={drawFromDeck}
-          drawFromDiscard={drawFromDiscard}
+          drawFromDeck={() => drawFrom('deck')}
+          drawFromDiscard={() => drawFrom('discard')}
         />
 
         <PlayerSet playerSets={player1Sets} />
         <div className="text-center">
           <h2 className="font-bold mb-2">
-            <span className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1' : ''}`}>
+            <span
+              className={` ${currentPlayer == 'p1' ? 'border-2 border-green-500 p-1 rounded-lg' : ''}`}
+            >
               Player 1 (You)
             </span>
           </h2>
@@ -281,11 +337,11 @@ export default function Home() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={player1.map(c => getCardId(c))}
+              items={player1Cards.map(c => getCardId(c))}
               strategy={verticalListSortingStrategy}
             >
               <div className="flex gap-1 flex-wrap justify-center">
-                {player1.map(c => (
+                {player1Cards.map(c => (
                   <SortableCard
                     key={getCardId(c)}
                     id={getCardId(c)}

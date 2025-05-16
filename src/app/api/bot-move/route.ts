@@ -8,12 +8,10 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   let botHand: CardType[] = [];
-  let discardTop;
   let objective;
   try {
     const body = await request.json();
     botHand = body.botHand;
-    discardTop = body.discardTop;
     objective = body.objective;
 
     const prompt = `
@@ -29,7 +27,6 @@ Important rules:
   For example, if the goal is "2 trios", you must have two complete trios.  
   If the goal is "1 trio and 1 run", you must have both fully.
 - Do **not** lay down partial groups.
-- When drawing, prioritize cards that help complete remaining groups.
 - When discarding, avoid discarding useful cards for your goal.
 
 ---
@@ -41,7 +38,6 @@ Decision:
 {
   "canGoDown": true,
   "groups": [["7♠", "7♥", "7♦"], ["9♠", "9♥", "9♦"]],
-  "drawFrom": "deck",
   "discardCard": "2♣"
 }
 
@@ -54,7 +50,6 @@ Decision:
 {
   "canGoDown": true,
   "groups": [["5♠", "6♠", "7♠", "8♠"], ["K♥", "K♦", "K♣"]],
-  "drawFrom": "deck",
   "discardCard": "2♠"
 }
 
@@ -67,13 +62,10 @@ Current goal: ${objective}
 Your current hand (with deck numbers):
 ${botHand.map((c: CardType) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
 
-The top card on the discard pile is: ${discardTop.rank}${discardTop.suit}-${discardTop.deckNumber}
-
 Respond strictly as JSON:
 {
   "canGoDown": true or false,
   "groups": [ ["7♠-1", "7♥-2", "7♦-1"], ["5♠-1", "6♠-2", "7♠-1", "8♠-1"] ],
-  "drawFrom": "deck" or "discard",
   "discardCard": "<rank><suit>-<deckNumber>"
 }
 `;
@@ -84,6 +76,7 @@ Respond strictly as JSON:
     });
 
     const reply = completion.choices[0].message?.content;
+    console.log(reply);
     const jsonMatch = reply?.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.log(jsonMatch);
@@ -98,7 +91,6 @@ Respond strictly as JSON:
       {
         canGoDown: false,
         groups: [],
-        drawFrom: 'deck',
         discardCard: `${botHand[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`,
       },
       { status: 500 }
