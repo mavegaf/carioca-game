@@ -59,3 +59,29 @@ export function goDown(objetive: string, cards: Card[]) {
   }
 
 }
+
+export function goDownInSet(objetive: string, cards: Card[], playerSet: Card[][]): Card[][] {
+  if (objetive === '2 trios') {
+
+    const newPlayerSet: Card[][] = [
+      [...playerSet[0]],
+      [...playerSet[1]]
+    ];
+    const trio1Rank = newPlayerSet[0][0];
+    const trio2Rank = newPlayerSet[1][0];
+
+    for (const card of cards) {
+      if (card.rank == trio1Rank.rank) {
+        newPlayerSet[0].push(card);
+      } else if (card.rank == trio2Rank.rank) {
+        newPlayerSet[1].push(card);
+      }
+    }
+
+    return newPlayerSet;
+
+  } else {
+    // TODO implement others objetives
+    return [];
+  }
+}

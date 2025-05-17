@@ -67,10 +67,13 @@ export default function Home() {
 
   useBotPlayer({
     currentPlayer,
-    player2Cards,
     currentObjective,
+    player2Cards,
+    player1Sets,
+    player2Sets,
     handleDrawFrom,
     setPlayer2Cards,
+    setPlayer1Sets,
     setPlayer2Sets,
     setCurrentPlayer,
     setGameLog,
@@ -190,6 +193,7 @@ export default function Home() {
         <PlayerSet playerSets={player2Sets} />
 
         <Deck
+          currentPlayer={currentPlayer}
           drawFromDeck={() => handleDrawFrom('deck')}
           drawFromDiscard={() => handleDrawFrom('discard')}
         />

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { getCardId, Card, goDown } from '@/lib/deck';
+import { getCardId, Card, goDown, goDownInSet } from '@/lib/deck';
 import { useDeck } from '@/contexts/DeckContext';
 
 type CardSourceType = 'deck' | 'discard';
 
 type Props = {
     currentPlayer: 'p1' | 'p2';
-    player2Cards: Card[];
     currentObjective: string;
+    player2Cards: Card[];
+    player1Sets: Card[][];
+    player2Sets: Card[][];
     handleDrawFrom: (source: CardSourceType) => void;
     setPlayer2Cards: React.Dispatch<React.SetStateAction<Card[]>>;
+    setPlayer1Sets: React.Dispatch<React.SetStateAction<Card[][]>>;
     setPlayer2Sets: React.Dispatch<React.SetStateAction<Card[][]>>;
     setCurrentPlayer: (player: 'p1' | 'p2') => void;
     setGameLog: (log: string) => void;
@@ -19,10 +22,13 @@ type BotPhases = 'idle' | 'drawing' | 'go-down' | 'discarding';
 
 export function useBotPlayer({
     currentPlayer,
-    player2Cards,
     currentObjective,
+    player2Cards,
+    player1Sets,
+    player2Sets,
     handleDrawFrom,
     setPlayer2Cards,
+    setPlayer1Sets,
     setPlayer2Sets,
     setCurrentPlayer,
     setGameLog,
@@ -91,15 +97,35 @@ export function useBotPlayer({
 
         console.log('player2 ' + botPhase);
 
-        const cardsToGoDown = goDown(currentObjective, player2Cards);
+        if (player2Sets.length > 0) {
+            // If already went down, I can discard in my sets or player 1 set.
+            const newPlayer2Set = goDownInSet(currentObjective, player2Cards, player2Sets);
+            setPlayer2Sets(newPlayer2Set);
 
-        if (cardsToGoDown?.length > 0) {
-            setPlayer2Sets(prev => [...prev, ...cardsToGoDown]);
+            const idsToRemoveFromSet2 = new Set(newPlayer2Set.flat().map(getCardId));
+            let newPlayer2Cards = player2Cards.filter(c => !idsToRemoveFromSet2.has(getCardId(c)));
 
-            const idsToRemove = new Set(cardsToGoDown.flat().map(getCardId));
-            const remaining = player2Cards.filter(c => !idsToRemove.has(getCardId(c)));
-            setPlayer2Cards(remaining);
+            if (player1Sets.length > 0) {
+                const newPlayer1Set = goDownInSet(currentObjective, newPlayer2Cards, player1Sets);
+                setPlayer1Sets(newPlayer1Set);
+
+                const idsToRemoveFromSet1 = new Set(newPlayer1Set.flat().map(getCardId));
+                newPlayer2Cards = newPlayer2Cards.filter(c => !idsToRemoveFromSet1.has(getCardId(c)));
+            }
+            setPlayer2Cards(newPlayer2Cards);
+
+        } else {
+            const cardsToGoDown = goDown(currentObjective, player2Cards);
+
+            if (cardsToGoDown?.length > 0) {
+                setPlayer2Sets(prev => [...prev, ...cardsToGoDown]);
+
+                const idsToRemove = new Set(cardsToGoDown.flat().map(getCardId));
+                const remaining = player2Cards.filter(c => !idsToRemove.has(getCardId(c)));
+                setPlayer2Cards(remaining);
+            }
         }
+
 
         setBotPhase('discarding');
 
