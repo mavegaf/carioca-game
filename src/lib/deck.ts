@@ -57,7 +57,13 @@ export function goDown(objetive: string, cards: Card[]) {
     // TODO implement others objetives
     return [];
   }
+}
 
+
+export function canGoDown(objetive: string, cards: Card[]) {
+  const goDownCards = goDown(objetive, cards);
+
+  return goDownCards.length > 0;
 }
 
 export function goDownInSet(objetive: string, cards: Card[], playerSet: Card[][]): Card[][] {

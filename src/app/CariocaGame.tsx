@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { generateDeck, shuffleDeck, getCardId, Card as CardType } from '@/lib/deck';
+import { generateDeck, shuffleDeck, getCardId, Card as CardType, canGoDown } from '@/lib/deck';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -140,8 +140,6 @@ export default function Home() {
 
       const remaining = player1Cards.filter(c => !newSets.flat().includes(c));
       setPlayer1Cards(remaining);
-    } else {
-      alert('Not ready to go down. You need: ' + currentObjective);
     }
   }
 
@@ -229,11 +227,12 @@ export default function Home() {
               </div>
             </SortableContext>
           </DndContext>
-          <button
-            className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
+          <button disabled={!canGoDown(currentObjective, player1Cards)}
+            //className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
+            className={`mt-2 px-4 py-2 text-white rounded ${canGoDown(currentObjective, player1Cards) ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             onClick={handlePlayer1GoDown}
           >
-            Lay Down
+            Go Down
           </button>
         </div>
       </div>
