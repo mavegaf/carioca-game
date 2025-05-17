@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { Card } from '@/lib/deck';
 
 type CardSource = 'deck' | 'discard';
@@ -26,6 +26,18 @@ export function useDeck() {
 export function DeckProvider({ children }: { children: React.ReactNode }) {
     const [deck, setDeck] = useState<Card[]>([]);
     const [discardPile, setDiscardPile] = useState<Card[]>([]);
+
+
+    /**
+     * I deck run out of cards, use discardPile
+     */
+    useEffect(() => {
+        if (deck.length <= 0 && discardPile.length > 0) {
+            const newDeck = [...discardPile];
+            setDeck(newDeck);
+            setDiscardPile([]);
+        }
+    }, [deck, discardPile]);
 
     const drawFrom = (from: CardSource): Card | null => {
         if (from === 'deck' && deck.length > 0) {
