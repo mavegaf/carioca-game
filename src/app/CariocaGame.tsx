@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { generateDeck, shuffleDeck, getCardId, Card as CardType, canGoDown } from '@/lib/deck';
+import { generateDeck, shuffleDeck, getCardId, Card as CardType, canGoDown, goDownInSet } from '@/lib/deck';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -99,7 +99,26 @@ export default function Home() {
     if (!card) return;
 
     if (currentPlayer === 'p1') {
-      setPlayer1Cards([...player1Cards, card]);
+      let newPlayer1Cards = [...player1Cards, card];
+
+      if (player1Sets.length > 0) {
+        // If I already went down, I can discard in my sets of p2 sets
+        const newPlayer1Set = goDownInSet(currentObjective, newPlayer1Cards, player1Sets);
+        setPlayer1Sets(newPlayer1Set);
+
+        const idsToRemoveFromSet1 = new Set(newPlayer1Set.flat().map(getCardId));
+        newPlayer1Cards = newPlayer1Cards.filter(c => !idsToRemoveFromSet1.has(getCardId(c)));
+
+        if (player2Sets.length > 0) {
+          const newPlayer2Set = goDownInSet(currentObjective, newPlayer1Cards, player2Sets);
+          setPlayer2Sets(newPlayer2Set);
+
+          const idsToRemoveFromSet2 = new Set(newPlayer2Set.flat().map(getCardId));
+          newPlayer1Cards = newPlayer1Cards.filter(c => !idsToRemoveFromSet2.has(getCardId(c)));
+        }
+      }
+
+      setPlayer1Cards(newPlayer1Cards);
       setGameLog('Player 1: Now discard a card');
       setLastDrawnCardId(getCardId(card));
       setTimeout(() => {
