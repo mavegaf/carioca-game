@@ -14,84 +14,73 @@ export async function POST(request: Request) {
     botHand = body.botHand;
     objective = body.objective;
 
-    const prompt = `
-You are playing Carioca, a card game.
+    const tools = [
+      {
+        type: 'function' as const,
+        function: {
+          name: 'decide_discard_card',
+          description: 'Given the current hand and the goal, choose the best card to discard.',
+          parameters: {
+            type: 'object',
+            properties: {
+              discardCard: {
+                type: 'string',
+                description: 'Card to discard in the format <rank><suit>-<deckNumber>',
+              },
+            },
+            required: ['discardCard'],
+          },
+        },
+      },
+    ];
 
-Game definitions:
-- A "trio" is three cards of the same rank (e.g., 7♠, 7♥, 7♦).
-- A "run" is four or more consecutive cards of the same suit (e.g., 5♠, 6♠, 7♠, 8♠).
-- Runs can wrap around: you can connect Q♠, K♠, A♠, 2♠, 3♠ as a valid sequence.
+    const systemPrompt = `
+You are playing Carioca, a Latin American card game.
 
-Important rules:
-- Only lay down ("go down") when you **fully** meet the current goal.  
-  For example, if the goal is "2 trios", you must have two complete trios.  
-  If the goal is "1 trio and 1 run", you must have both fully.
-- Do **not** lay down partial groups.
-- When discarding, avoid discarding useful cards for your goal.
+Definitions:
+- A "trio" is 3 cards of the same rank (e.g., 7♠, 7♥, 7♦).
+- A "run" is 4 or more consecutive cards of the same suit (e.g., 5♠, 6♠, 7♠, 8♠).
+- Runs can wrap around (Q♠, K♠, A♠, 2♠).
 
----
+Important:
+- Avoid discarding useful cards for your current goal (trio or run).
+- Choose the **least useful** card for your current objective.
 
-### Example 1:
-Goal: 2 trios  
-Hand: 7♠, 7♥, 7♦, 9♠, 9♥, 9♦, 2♣, 4♠, 5♥, 6♣, J♠, Q♣  
-Decision:
-{
-  "canGoDown": true,
-  "groups": [["7♠", "7♥", "7♦"], ["9♠", "9♥", "9♦"]],
-  "discardCard": "2♣"
-}
+Respond by calling the function **decide_discard_card** with one key: "discardCard"
+`;
 
----
+    const userPrompt = `
+Goal: ${objective}
 
-### Example 2:
-Goal: 1 trio and 1 run  
-Hand: 5♠, 6♠, 7♠, 8♠, K♥, K♦, K♣, 2♠, 4♣, 9♦, Q♥, 3♠  
-Decision:
-{
-  "canGoDown": true,
-  "groups": [["5♠", "6♠", "7♠", "8♠"], ["K♥", "K♦", "K♣"]],
-  "discardCard": "2♠"
-}
-
----
-
-### Now, your current situation:
-
-Current goal: ${objective}
-
-Your current hand (with deck numbers):
+Your hand (with deck numbers):
 ${botHand.map((c: CardType) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
 
-Respond strictly as JSON:
-{
-  "canGoDown": true or false,
-  "groups": [ ["7♠-1", "7♥-2", "7♦-1"], ["5♠-1", "6♠-2", "7♠-1", "8♠-1"] ],
-  "discardCard": "<rank><suit>-<deckNumber>"
-}
+Respond only with the card to discard, using format "<rank><suit>-<deckNumber>"
 `;
 
     const completion = await openai.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
       model: 'gpt-4-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      tools,
+      tool_choice: { type: 'function', function: { name: 'decide_discard_card' } },
     });
 
-    const reply = completion.choices[0].message?.content;
-    console.log(reply);
-    const jsonMatch = reply?.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.log(jsonMatch);
-      throw new Error('No JSON block found in OpenAI response');
+    const toolCall = completion.choices[0].message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      throw new Error('Tool call did not return arguments');
     }
-    const decision = JSON.parse(jsonMatch[0]);
+
+    const decision = JSON.parse(toolCall.function.arguments);
 
     return NextResponse.json({ decision });
   } catch (error) {
     console.error('Bot move error:', error);
     return NextResponse.json(
       {
-        canGoDown: false,
-        groups: [],
-        discardCard: `${botHand[0]?.rank}${botHand[0].suit}${botHand[0].deckNumber}`,
+        discardCard: `${botHand[0]?.rank}${botHand[0].suit}-${botHand[0].deckNumber}`,
       },
       { status: 500 }
     );

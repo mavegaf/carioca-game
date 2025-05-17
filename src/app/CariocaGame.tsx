@@ -103,6 +103,7 @@ export default function Home() {
         setLastDrawnCardId(null);
       }, 2000);
     } else if (currentPlayer === 'p2') {
+      console.log('--> draw from ', source, ' card:', card);
       setPlayer2Cards([...player2Cards, card]);
     }
   }

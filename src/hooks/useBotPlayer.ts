@@ -68,10 +68,9 @@ export function useBotPlayer({
                 const data = await res.json();
 
                 const drawFromDecision = data?.decision?.drawFrom ?? 'deck';
+                console.log(drawFromDecision);
 
                 handleDrawFrom(drawFromDecision);
-                console.log('picked from ');
-                console.log(drawFromDecision);
             } catch (error) {
                 console.error('Error in botDraw:', error);
                 handleDrawFrom('deck');
