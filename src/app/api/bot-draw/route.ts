@@ -54,6 +54,7 @@ Hand: ${botHand.map((c) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
 Discard top: ${discardTop.rank}${discardTop.suit}-${discardTop.deckNumber}
 `;
 
+    console.log('--> bot draw');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [

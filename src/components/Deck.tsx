@@ -7,17 +7,19 @@ export default function Deck({
   drawFromDeck,
   drawFromDiscard,
   lastDiscardedFrom,
+  children,
 }: {
   currentPlayer: string;
   drawFromDeck: () => void;
   drawFromDiscard: () => void;
-  lastDiscardedFrom: string | null
+  lastDiscardedFrom: string | null,
+  children?: React.ReactNode;
 }) {
   const { deck, discardPile } = useDeck();
 
 
   return (
-    <div className="flex gap-2 mb-2 justify-center">
+    <div className="flex gap-2 items-start gap-6 justify-center">
       <div
         className={`
           w-16 h-24 bg-gray-300 rounded-lg flex items-center justify-center cursor-pointer
@@ -37,6 +39,7 @@ export default function Deck({
       >
         {discardPile.length > 0 ? <Card card={discardPile[discardPile.length - 1]} /> : 'Empty'}
       </div>
+      {children}
     </div>
   );
 }

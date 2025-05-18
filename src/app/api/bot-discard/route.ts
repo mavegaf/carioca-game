@@ -58,6 +58,7 @@ ${botHand.map((c: CardType) => `${c.rank}${c.suit}-${c.deckNumber}`).join(', ')}
 Respond only with the card to discard, using format "<rank><suit>-<deckNumber>"
 `;
 
+    console.log('--> bot discard');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [
@@ -74,6 +75,7 @@ Respond only with the card to discard, using format "<rank><suit>-<deckNumber>"
     }
 
     const decision = JSON.parse(toolCall.function.arguments);
+    console.log(decision);
 
     return NextResponse.json({ decision });
   } catch (error) {
