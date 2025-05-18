@@ -32,6 +32,7 @@ export default function Home() {
   const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentObjective, setCurrentObjective] = useState('2 trios');
+  const [gameOver, setGameOver] = useState(false);
 
 
   const [gameLog, setGameLog] = useState<string>('');
@@ -78,6 +79,23 @@ export default function Home() {
     setCurrentPlayer,
     setGameLog,
   });
+
+  /**
+   * If one of the player's cards is empty, there is a winner
+   */
+  useEffect(() => {
+
+    // Not initialized yet
+    if (!player1Cards.length && !player2Cards.length) return;
+
+    if (player1Cards.length == 0) {
+      setGameLog('🏆 Player 1 wins!');
+      setGameOver(true);
+    } else if (player2Cards.length == 0) {
+      setGameLog('🏆 Bot (Player 2) wins!');
+      setGameOver(true);
+    }
+  }, [player1Cards, player2Cards]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -253,6 +271,13 @@ export default function Home() {
           >
             Go Down
           </button>
+          {gameOver && (
+            <button
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+              onClick={() => window.location.reload()}
+            >
+              🔄 Restart Game
+            </button>)}
         </div>
       </div>
     </main>
