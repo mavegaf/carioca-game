@@ -71,9 +71,3 @@ This project is licensed under the MIT License.
 ## 🙌 Acknowledgments
 
 Inspired by the traditional Carioca card game, with the goal of creating a fun, solo playing experience against an AI opponent.
-
----
-
-## 📬 Contact
-
-Found a bug or have a suggestion? Feel free to open an issue
