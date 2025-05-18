@@ -147,6 +147,9 @@ export default function Home() {
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
       setPlayer2LastDrawCardId(getCardId(card));
+      setTimeout(() => {
+        setPlayer2LastDrawCardId(null);
+      }, 2000);
       setPlayer2Cards([...player2Cards, card]);
     }
   }
