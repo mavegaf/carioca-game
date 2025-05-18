@@ -29,8 +29,9 @@ export default function Home() {
   const [player2Cards, setPlayer2Cards] = useState<CardType[]>([]);
   const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
 
+  // Highlight 
   const [player1LastDrawCardId, setPlayer1LastDrawCardId] = useState<string | null>(null);
-  const [player1LastDiscardedCardId, setPlayer1LastDiscardedCardId] = useState<string | null>(null);
+  const [player1DeckODiscard, setPlayer1DeckODiscard] = useState<string | null>(null);
   const [player2LastDrawCardId, setPlayer2LastDrawCardId] = useState<string | null>(null);
   const [player2LastDiscardedCardId, setPlayer2LastDiscardedCardId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -140,10 +141,9 @@ export default function Home() {
 
       setPlayer1Cards(newPlayer1Cards);
       setGameLog('Player 1: Now discard a card');
-      setPlayer1LastDrawCardId(getCardId(card));
-      setTimeout(() => {
-        setPlayer1LastDrawCardId(null);
-      }, 2000);
+      highlightDrawCard(setPlayer1DeckODiscard, setPlayer1LastDrawCardId, source, card)
+
+
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
       setPlayer2LastDrawCardId(getCardId(card));
@@ -154,6 +154,20 @@ export default function Home() {
     }
   }
 
+  function highlightDrawCard(
+    setPlayer1DeckODiscard: React.Dispatch<React.SetStateAction<string | null>>,
+    setPlayer1LastDrawCardId: React.Dispatch<React.SetStateAction<string | null>>,
+    source: string,
+    card: CardType) {
+    setPlayer1DeckODiscard(source);
+    setTimeout(() => {
+      setPlayer1DeckODiscard(null);
+      setPlayer1LastDrawCardId(getCardId(card));
+      setTimeout(() => {
+        setPlayer1LastDrawCardId(null);
+      }, 2000);
+    }, 100);
+  }
   function discardCard(cardId: string) {
     if (gameOver) return;
 
@@ -204,8 +218,6 @@ export default function Home() {
         <h3 className="font-bold mb-2">In Development</h3>
         <ul className="text-sm list-disc list-inside mb-4">
           <li>Only supports &quot;trios&ldquo; fow now</li>
-          <li>You can lay down once, but no other cards can be played after.</li>
-          <li>No win condition implemented yet.</li>
         </ul>
         <h3 className="font-bold mb-2">Instructions</h3>
         <ul className="text-sm list-disc list-inside mb-4">
@@ -241,6 +253,7 @@ export default function Home() {
           currentPlayer={currentPlayer}
           drawFromDeck={() => handleDrawFrom('deck')}
           drawFromDiscard={() => handleDrawFrom('discard')}
+          lastDiscardedFrom={player1DeckODiscard}
         />
 
         <PlayerSet playerSets={player1Sets} />
