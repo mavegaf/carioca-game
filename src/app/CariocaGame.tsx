@@ -40,11 +40,7 @@ export default function Home() {
 
   const [gameLog, setGameLog] = useState<string>('');
 
-  // TODO fix this, this is wrong, needs to be an state?
-  const player1HasDraw = useMemo(
-    () => (player1Cards.length + player1Sets.flat().length === 12 ? false : true),
-    [player1Cards, player1Sets]
-  );
+  const [p1Phase, setp1Phase] = useState<'drawing' | 'discarding'>('drawing');
 
   useEffect(() => {
     if (!didInit) {
@@ -114,7 +110,7 @@ export default function Home() {
   function handleDrawFrom(source: CardSourceType) {
     if (gameOver) return;
 
-    if (currentPlayer === 'p1' && player1HasDraw) return;
+    if (currentPlayer === 'p1' && p1Phase != 'drawing') return;
 
     const card = drawFrom(source);
     if (!card) return;
@@ -143,6 +139,7 @@ export default function Home() {
       setGameLog('Player 1: Now discard a card');
       highlightDrawCard(setHighLightDeckODiscard, setPlayer1LastDrawCardId, source, card)
 
+      setp1Phase('discarding');
 
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
@@ -181,7 +178,7 @@ export default function Home() {
   function discardCard(cardId: string) {
     if (gameOver) return;
 
-    if (!player1HasDraw) return;
+    if (p1Phase != 'discarding') return;
 
     const card = player1Cards.find(c => getCardId(c) === cardId);
     if (!card) return;
@@ -189,6 +186,7 @@ export default function Home() {
     setPlayer1Cards(player1Cards.filter(c => getCardId(c) !== cardId));
     setDiscardPile([...discardPile, card]);
     highlightDiscardedCard(setHighLightDeckODiscard, 'discard');
+    setp1Phase('drawing');
     setGameLog('Player 2. Thinking...');
     setCurrentPlayer('p2');
   }
