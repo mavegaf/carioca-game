@@ -33,7 +33,7 @@ export default function Home() {
   const [player1LastDrawCardId, setPlayer1LastDrawCardId] = useState<string | null>(null);
   const [player1DeckODiscard, setPlayer1DeckODiscard] = useState<string | null>(null);
   const [player2LastDrawCardId, setPlayer2LastDrawCardId] = useState<string | null>(null);
-  const [player2LastDiscardedCardId, setPlayer2LastDiscardedCardId] = useState<string | null>(null);
+  const [player2DeckODiscard, setPlayer2DeckODiscard] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentObjective, setCurrentObjective] = useState('2 trios');
   const [gameOver, setGameOver] = useState(false);
@@ -146,10 +146,8 @@ export default function Home() {
 
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
-      setPlayer2LastDrawCardId(getCardId(card));
-      setTimeout(() => {
-        setPlayer2LastDrawCardId(null);
-      }, 2000);
+      highlightDrawCard(setPlayer2DeckODiscard, setPlayer2LastDrawCardId, source, card)
+
       setPlayer2Cards([...player2Cards, card]);
     }
   }
@@ -253,7 +251,7 @@ export default function Home() {
           currentPlayer={currentPlayer}
           drawFromDeck={() => handleDrawFrom('deck')}
           drawFromDiscard={() => handleDrawFrom('discard')}
-          lastDiscardedFrom={player1DeckODiscard}
+          lastDiscardedFrom={player1DeckODiscard || player2DeckODiscard}
         />
 
         <PlayerSet playerSets={player1Sets} />
