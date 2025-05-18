@@ -31,9 +31,8 @@ export default function Home() {
 
   // Highlight 
   const [player1LastDrawCardId, setPlayer1LastDrawCardId] = useState<string | null>(null);
-  const [player1DeckODiscard, setPlayer1DeckODiscard] = useState<string | null>(null);
   const [player2LastDrawCardId, setPlayer2LastDrawCardId] = useState<string | null>(null);
-  const [player2DeckODiscard, setPlayer2DeckODiscard] = useState<string | null>(null);
+  const [highLightDeckODiscard, setHighLightDeckODiscard] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentObjective, setCurrentObjective] = useState('2 trios');
   const [gameOver, setGameOver] = useState(false);
@@ -79,6 +78,7 @@ export default function Home() {
     setPlayer2Sets,
     setCurrentPlayer,
     setGameLog,
+    setHighLightDeckODiscard,
   });
 
   /**
@@ -141,31 +141,43 @@ export default function Home() {
 
       setPlayer1Cards(newPlayer1Cards);
       setGameLog('Player 1: Now discard a card');
-      highlightDrawCard(setPlayer1DeckODiscard, setPlayer1LastDrawCardId, source, card)
+      highlightDrawCard(setHighLightDeckODiscard, setPlayer1LastDrawCardId, source, card)
 
 
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
-      highlightDrawCard(setPlayer2DeckODiscard, setPlayer2LastDrawCardId, source, card)
+      highlightDrawCard(setHighLightDeckODiscard, setPlayer2LastDrawCardId, source, card)
 
       setPlayer2Cards([...player2Cards, card]);
     }
   }
 
   function highlightDrawCard(
-    setPlayer1DeckODiscard: React.Dispatch<React.SetStateAction<string | null>>,
-    setPlayer1LastDrawCardId: React.Dispatch<React.SetStateAction<string | null>>,
+    setHighLightDeckODiscard: React.Dispatch<React.SetStateAction<string | null>>,
+    setPlayerLastDrawCardId: React.Dispatch<React.SetStateAction<string | null>>,
     source: string,
     card: CardType) {
-    setPlayer1DeckODiscard(source);
+    setHighLightDeckODiscard(source);
     setTimeout(() => {
-      setPlayer1DeckODiscard(null);
-      setPlayer1LastDrawCardId(getCardId(card));
+      setHighLightDeckODiscard(null);
+      setPlayerLastDrawCardId(getCardId(card));
       setTimeout(() => {
-        setPlayer1LastDrawCardId(null);
+        setPlayerLastDrawCardId(null);
       }, 2000);
     }, 100);
   }
+
+  function highlightDiscardedCard(
+    setHighLightDeckODiscard: React.Dispatch<React.SetStateAction<string | null>>,
+    source: string
+  ) {
+    setHighLightDeckODiscard(source);
+    setTimeout(() => {
+      setHighLightDeckODiscard(null);
+    }, 100);
+
+  }
+
   function discardCard(cardId: string) {
     if (gameOver) return;
 
@@ -176,6 +188,7 @@ export default function Home() {
 
     setPlayer1Cards(player1Cards.filter(c => getCardId(c) !== cardId));
     setDiscardPile([...discardPile, card]);
+    highlightDiscardedCard(setHighLightDeckODiscard, 'discard');
     setGameLog('Player 2. Thinking...');
     setCurrentPlayer('p2');
   }
@@ -251,7 +264,7 @@ export default function Home() {
           currentPlayer={currentPlayer}
           drawFromDeck={() => handleDrawFrom('deck')}
           drawFromDiscard={() => handleDrawFrom('discard')}
-          lastDiscardedFrom={player1DeckODiscard || player2DeckODiscard}
+          lastDiscardedFrom={highLightDeckODiscard}
         />
 
         <PlayerSet playerSets={player1Sets} />

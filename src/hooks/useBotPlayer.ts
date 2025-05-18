@@ -17,6 +17,7 @@ type Props = {
     setPlayer2Sets: React.Dispatch<React.SetStateAction<Card[][]>>;
     setCurrentPlayer: (player: 'p1' | 'p2') => void;
     setGameLog: (log: string) => void;
+    setHighLightDeckODiscard: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
 type BotPhases = 'idle' | 'drawing' | 'go-down' | 'discarding';
@@ -34,6 +35,7 @@ export function useBotPlayer({
     setPlayer2Sets,
     setCurrentPlayer,
     setGameLog,
+    setHighLightDeckODiscard,
 }: Props) {
 
     const { discardPile, setDiscardPile } = useDeck();
@@ -194,6 +196,11 @@ export function useBotPlayer({
                         )
                     );
                     setDiscardPile(prev => [...prev, cardToDiscard]);
+
+                    setHighLightDeckODiscard('discard');
+                    setTimeout(() => {
+                        setHighLightDeckODiscard(null);
+                    }, 100);
 
                     setCurrentPlayer('p1');
                     setGameLog('Player 1. Take a card');
