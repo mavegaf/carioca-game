@@ -259,7 +259,7 @@ export default function Home() {
             </h2>
             <div className={`flex gap-1 flex-wrap justify-center p-2 rounded-lg transition-all duration-300 ${currentPlayer === 'p2' ? 'bg-green-50 ring-2 ring-green-400' : ''}`}>
               {player2Cards.map((c, i) => (
-                <Card key={i} card={c} highlight={player2LastDrawCardId === getCardId(c)} />
+                <Card key={i} card={c} highlight={player2LastDrawCardId === getCardId(c)} back />
               ))}
             </div>
           </div>
