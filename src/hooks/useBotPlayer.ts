@@ -7,6 +7,7 @@ type CardSourceType = 'deck' | 'discard';
 type Props = {
     currentPlayer: 'p1' | 'p2';
     currentObjective: string;
+    gameOver: boolean
     player2Cards: Card[];
     player1Sets: Card[][];
     player2Sets: Card[][];
@@ -23,6 +24,7 @@ type BotPhases = 'idle' | 'drawing' | 'go-down' | 'discarding';
 export function useBotPlayer({
     currentPlayer,
     currentObjective,
+    gameOver,
     player2Cards,
     player1Sets,
     player2Sets,
@@ -42,16 +44,21 @@ export function useBotPlayer({
      * 
      */
     useEffect(() => {
+
+        if (gameOver) return;
+
         if (currentPlayer === 'p2') {
             setBotPhase('drawing');
         }
-    }, [currentPlayer]);
+    }, [currentPlayer, gameOver]);
 
     /**
      * Player 2 draw a card from deck or discard pile.
      *
      */
     useEffect(() => {
+
+        if (gameOver) return;
 
         if (botPhase !== 'drawing') return;
 
@@ -87,12 +94,14 @@ export function useBotPlayer({
         player2BotDrawACard();
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [botPhase]);
+    }, [botPhase, gameOver]);
 
     /**
      * Player 2 go down if meet the current objetive
      */
     useEffect(() => {
+        if (gameOver) return;
+
         if (botPhase !== 'go-down') return;
 
         console.log('player2 ' + botPhase);
@@ -130,13 +139,15 @@ export function useBotPlayer({
         setBotPhase('discarding');
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [botPhase]);
+    }, [botPhase, gameOver]);
 
     /**
        * Player2 discard a card
        *
        */
     useEffect(() => {
+        if (gameOver) return;
+
         if (botPhase !== 'discarding') return;
 
         console.log('player2 ' + botPhase);
@@ -197,6 +208,6 @@ export function useBotPlayer({
         player2BotDiscard();
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [botPhase]);
+    }, [botPhase, gameOver]);
 
 }

@@ -69,6 +69,7 @@ export default function Home() {
   useBotPlayer({
     currentPlayer,
     currentObjective,
+    gameOver,
     player2Cards,
     player1Sets,
     player2Sets,
@@ -111,6 +112,8 @@ export default function Home() {
   }
 
   function handleDrawFrom(source: CardSourceType) {
+    if (gameOver) return;
+
     if (currentPlayer === 'p1' && player1HasDrawn) return;
 
     const card = drawFrom(source);
@@ -149,6 +152,8 @@ export default function Home() {
   }
 
   function discardCard(cardId: string) {
+    if (gameOver) return;
+
     if (!player1HasDrawn) return;
 
     const card = player1Cards.find(c => getCardId(c) === cardId);
@@ -161,6 +166,8 @@ export default function Home() {
   }
 
   function handlePlayer1GoDown() {
+    if (gameOver) return;
+
     const rankGroups: { [key: string]: CardType[] } = {};
     player1Cards.forEach(card => {
       const key = card.rank;
