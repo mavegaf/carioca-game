@@ -7,12 +7,12 @@ export default function SortableCard({
   card,
   id,
   onDoubleClick,
-  highlight,
+  highlight = false,
 }: {
   card: CardType;
   id: string;
   onDoubleClick: () => void;
-  highlight?: boolean;
+  highlight: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -31,9 +31,9 @@ export default function SortableCard({
       {...attributes}
       {...listeners}
       onDoubleClick={onDoubleClick}
-      className={`cursor-pointer ${highlight ? 'border-3 border-yellow-300 rounded-lg' : ''}`}
+      className="cursor-pointer"
     >
-      <Card card={card} />
+      <Card card={card} highlight={highlight} />
     </div>
   );
 }

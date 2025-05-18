@@ -29,7 +29,10 @@ export default function Home() {
   const [player2Cards, setPlayer2Cards] = useState<CardType[]>([]);
   const [player2Sets, setPlayer2Sets] = useState<CardType[][]>([]);
 
-  const [lastDrawnCardId, setLastDrawnCardId] = useState<string | null>(null);
+  const [player1LastDrawCardId, setPlayer1LastDrawCardId] = useState<string | null>(null);
+  const [player1LastDiscardedCardId, setPlayer1LastDiscardedCardId] = useState<string | null>(null);
+  const [player2LastDrawCardId, setPlayer2LastDrawCardId] = useState<string | null>(null);
+  const [player2LastDiscardedCardId, setPlayer2LastDiscardedCardId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentObjective, setCurrentObjective] = useState('2 trios');
   const [gameOver, setGameOver] = useState(false);
@@ -37,15 +40,11 @@ export default function Home() {
 
   const [gameLog, setGameLog] = useState<string>('');
 
-  const player1HasDrawn = useMemo(
+  // TODO fix this, this is wrong, needs to be an state?
+  const player1HasDraw = useMemo(
     () => (player1Cards.length + player1Sets.flat().length === 12 ? false : true),
     [player1Cards, player1Sets]
   );
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const player1GoneDown = player1Sets.reduce((acc, s) => acc + s.length, 0) > 0 ? true : false;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const player2GoneDown = player2Sets.reduce((acc, s) => acc + s.length, 0) > 0 ? true : false;
 
   useEffect(() => {
     if (!didInit) {
@@ -114,7 +113,7 @@ export default function Home() {
   function handleDrawFrom(source: CardSourceType) {
     if (gameOver) return;
 
-    if (currentPlayer === 'p1' && player1HasDrawn) return;
+    if (currentPlayer === 'p1' && player1HasDraw) return;
 
     const card = drawFrom(source);
     if (!card) return;
@@ -141,12 +140,13 @@ export default function Home() {
 
       setPlayer1Cards(newPlayer1Cards);
       setGameLog('Player 1: Now discard a card');
-      setLastDrawnCardId(getCardId(card));
+      setPlayer1LastDrawCardId(getCardId(card));
       setTimeout(() => {
-        setLastDrawnCardId(null);
+        setPlayer1LastDrawCardId(null);
       }, 2000);
     } else if (currentPlayer === 'p2') {
       console.log('--> draw from ', source, ' card:', card);
+      setPlayer2LastDrawCardId(getCardId(card));
       setPlayer2Cards([...player2Cards, card]);
     }
   }
@@ -154,7 +154,7 @@ export default function Home() {
   function discardCard(cardId: string) {
     if (gameOver) return;
 
-    if (!player1HasDrawn) return;
+    if (!player1HasDraw) return;
 
     const card = player1Cards.find(c => getCardId(c) === cardId);
     if (!card) return;
@@ -228,7 +228,7 @@ export default function Home() {
           </h2>
           <div className="flex gap-1 flex-wrap justify-center">
             {player2Cards.map((c, i) => (
-              <Card key={i} card={c} />
+              <Card key={i} card={c} highlight={player2LastDrawCardId === getCardId(c)} />
             ))}
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function Home() {
                     id={getCardId(c)}
                     card={c}
                     onDoubleClick={() => discardCard(getCardId(c))}
-                    highlight={lastDrawnCardId === getCardId(c)}
+                    highlight={player1LastDrawCardId === getCardId(c)}
                   />
                 ))}
               </div>
