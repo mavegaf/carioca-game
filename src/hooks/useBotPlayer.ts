@@ -183,7 +183,13 @@ export function useBotPlayer({
 
                 console.log('Bot decision:', data.decision);
 
-                const cardToDiscard = player2Cards.find(c => getCardId(c) === discardCard);
+                let cardToDiscard = player2Cards.find(c => getCardId(c) === discardCard);
+                if (!cardToDiscard) {
+                    // Failed to find a card to discard, hallucination?
+                    // just pick the first
+                    console.log('bot cards:', player2Cards);
+                    cardToDiscard = player2Cards[0];
+                }
                 if (cardToDiscard) {
                     setPlayer2Cards(prev =>
                         prev.filter(
